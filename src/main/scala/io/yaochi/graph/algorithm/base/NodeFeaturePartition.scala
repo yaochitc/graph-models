@@ -5,9 +5,9 @@ import it.unimi.dsi.fastutil.longs.LongArrayList
 
 import scala.collection.mutable.ArrayBuffer
 
-class NodeFeaturePartition(index: Int,
-                           keys: Array[Long],
-                           features: Array[IntFloatVector]) extends Serializable {
+class NodeFeaturePartition(val index: Int,
+                           val keys: Array[Long],
+                           val features: Array[IntFloatVector]) extends Serializable {
   def init(model: GNNPSModel, numBatch: Int): Unit =
     model.initNodeFeatures(keys, features, numBatch)
 }

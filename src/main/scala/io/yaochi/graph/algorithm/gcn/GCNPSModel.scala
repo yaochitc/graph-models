@@ -16,8 +16,8 @@ import io.yaochi.graph.optim.AsyncOptim
 import org.apache.spark.rdd.RDD
 
 class GCNPSModel(graph: PSMatrix,
-                 weights: PSVector,
-                 labels: PSVector) extends GNNPSModel(graph, labels) {
+                 labels: PSVector,
+                 val weights: PSVector) extends GNNPSModel(graph, labels) {
 
   def readWeights(): Array[Float] =
     weights.pull().asInstanceOf[IntFloatVector].getStorage.getValues

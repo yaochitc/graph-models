@@ -3,14 +3,15 @@ package io.yaochi.graph.algorithm.base
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import it.unimi.dsi.fastutil.longs.LongArrayList
 
-class GraphAdjPartition(index: Int,
-                        keys: Array[Long],
-                        indptr: Array[Int],
-                        neighbours: Array[Long]) extends Serializable {
+class GraphAdjPartition(val index: Int,
+                        val keys: Array[Long],
+                        val indptr: Array[Int],
+                        val neighbours: Array[Long]) extends Serializable {
 
-  def apply(model: GNNPSModel, numBatch: Int): Unit = {
+  def init(model: GNNPSModel, numBatch: Int): Int = {
     // init adjacent table on servers
     model.initNeighbors(keys, indptr, neighbours, numBatch)
+    0
   }
 }
 

@@ -3,7 +3,8 @@ package io.yaochi.graph.algorithm.base
 import com.tencent.angel.ml.math2.VFactory
 import com.tencent.angel.ml.math2.vector.LongFloatVector
 
-class NodeLabelPartition(index: Int, labels: LongFloatVector) extends Serializable {
+class NodeLabelPartition(val index: Int,
+                         val labels: LongFloatVector) extends Serializable {
   def init(model: GNNPSModel): Unit =
     model.setLabels(labels)
 }
