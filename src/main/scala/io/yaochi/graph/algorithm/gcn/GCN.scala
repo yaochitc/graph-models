@@ -1,4 +1,4 @@
-package io.yaochi.graph.model.gcn
+package io.yaochi.graph.algorithm.gcn
 
 class GCN {
   def forward(batchSize: Int,

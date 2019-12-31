@@ -1,4 +1,4 @@
-package io.yaochi.graph.model.dgi
+package io.yaochi.graph.algorithm.dgi
 
 class DGI {
   def backward(batchSize: Int,
