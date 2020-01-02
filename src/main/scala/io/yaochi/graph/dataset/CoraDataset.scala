@@ -9,7 +9,7 @@ import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import scala.collection.immutable.HashMap
 
 object CoraDataset {
-  def load(directory: String): (DataFrame, DataFrame) = {
+  def load(directory: String): (DataFrame, DataFrame, DataFrame) = {
     val ss = SparkSession.builder().getOrCreate()
 
     val contentFilename = "cora.content"
@@ -64,8 +64,12 @@ object CoraDataset {
         node2IdBc.value(fields(1)).toLong
       ))
 
+    val featureLabelDF = ss.createDataFrame(encodedNodeRDD, nodeSchema)
+
     (ss.createDataFrame(edgeRDD, edgeSchema),
-      ss.createDataFrame(encodedNodeRDD, nodeSchema))
+      featureLabelDF.select("node", "feature"),
+      featureLabelDF.select("node", "label")
+    )
   }
 
   private def loadEdges(directory: String): DataFrame = {
