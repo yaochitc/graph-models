@@ -2,7 +2,6 @@ package io.yaochi.graph.dataset
 
 import java.nio.file.Paths
 
-import io.yaochi.graph.util.GraphIO
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 
@@ -39,7 +38,7 @@ object BlogCatalogDataset {
     val input = Paths.get(directory, filename)
 
     val schema = StructType(Seq(
-      StructField("src", LongType, nullable = false),
+      StructField("node", LongType, nullable = false),
       StructField("feature", StringType, nullable = false)
     ))
 
