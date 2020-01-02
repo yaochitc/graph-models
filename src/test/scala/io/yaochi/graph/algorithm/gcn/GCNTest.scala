@@ -22,6 +22,16 @@ class GCNTest {
   @Test
   def testGCN(): Unit = {
     val gcn = new GCN()
+    gcn.setOptimizer("adam")
+    gcn.setUseBalancePartition(false)
+    gcn.setBatchSize(100)
+    gcn.setStepSize(0.01)
+    gcn.setPSPartitionNum(10)
+    gcn.setPartitionNum(1)
+    gcn.setUseBalancePartition(false)
+    gcn.setNumEpoch(10)
+    gcn.setStorageLevel("MEMORY_ONLY")
+    gcn.setTestRatio(0.5f)
 
     val (edges, features, labels) = CoraDataset.load("data/cora")
     val (model, graph) = gcn.initialize(edges, features, Option(labels))
