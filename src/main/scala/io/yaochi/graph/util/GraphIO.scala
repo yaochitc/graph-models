@@ -64,4 +64,22 @@ object GraphIO {
       .schema(schema)
       .csv(input)
   }
+
+  def loadLabels(input: String,
+                sep: String = " "): DataFrame = {
+    val ss = SparkSession.builder().getOrCreate()
+
+    var schema = StructType(Seq(
+      StructField("node", LongType, nullable = false),
+      StructField("label", LongType, nullable = false)
+    ))
+
+    ss.read
+      .option(SEP, sep)
+      .option(HEADER, "false")
+      .schema(schema)
+      .csv(input)
+  }
+
+
 }
