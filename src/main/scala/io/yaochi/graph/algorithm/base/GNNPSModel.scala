@@ -2,7 +2,7 @@ package io.yaochi.graph.algorithm.base
 
 import com.tencent.angel.graph.client.getnodefeats2.{GetNodeFeats, GetNodeFeatsParam, GetNodeFeatsResult}
 import com.tencent.angel.graph.client.initNeighbor4.{InitNeighbor => InitNeighbor4, InitNeighborParam => InitNeighborParam4}
-import com.tencent.angel.graph.client.initNeighbor5.{InitNeighbor => InitNeighbor5, InitNeighborParam => InitNeighborParam5}
+import com.tencent.angel.graph.client.initNeighbor6.{InitNeighbor => InitNeighbor6, InitNeighborParam => InitNeighborParam6}
 import com.tencent.angel.graph.client.initnodefeats3.{InitNodeFeats => InitNodeFeats3, InitNodeFeatsParam => InitNodeFeatsParam3}
 import com.tencent.angel.graph.client.initnodefeats4.{InitNodeFeats => InitNodeFeats4, InitNodeFeatsParam => InitNodeFeatsParam4}
 import com.tencent.angel.graph.client.sampleFeats.{SampleNodeFeats, SampleNodeFeatsParam, SampleNodeFeatsResult}
@@ -87,8 +87,8 @@ abstract class GNNPSModel(val graph: PSMatrix,
                     neighbors: Array[Long],
                     start: Int,
                     end: Int): Unit = {
-    val param = new InitNeighborParam5(graph.id, keys, indptr, neighbors, start, end)
-    val func = new InitNeighbor5(param)
+    val param = new InitNeighborParam6(graph.id, keys, indptr, neighbors, start, end)
+    val func = new InitNeighbor6(param)
     graph.psfUpdate(func).get()
   }
 
