@@ -14,7 +14,7 @@ class GCNPartition(index: Int,
                    testLabels: Array[Float]) extends
   GNNPartition[GCNPSModel](index, keys, indptr, neighbors, true) {
 
-  def getTrainTestSize(): (Int, Int) = (trainIdx.length, testIdx.length)
+  def getTrainTestSize: (Int, Int) = (trainIdx.length, testIdx.length)
 
   override def trainEpoch(curEpoch: Int,
                           batchSize: Int,

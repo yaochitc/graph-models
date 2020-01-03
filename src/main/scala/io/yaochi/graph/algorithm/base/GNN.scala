@@ -13,7 +13,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.apache.spark.storage.StorageLevel
 
-abstract class GNN[PSModel <: GNNPSModel](val uid: String) extends Serializable
+abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) extends Serializable
   with HasBatchSize with HasFeatureDim with HasOptimizer
   with HasNumEpoch with HasNumSamples with HasNumBatchInit
   with HasPartitionNum with HasPSPartitionNum with HasUseBalancePartition
@@ -23,7 +23,7 @@ abstract class GNN[PSModel <: GNNPSModel](val uid: String) extends Serializable
 
   override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
 
-  def fit(model: PSModel, graph: Dataset[_]): Unit
+  def fit(model: Model, psModel: PSModel, graph: Dataset[_]): Unit
 
   def initFeatures(model: PSModel, features: Dataset[Row], minId: Long, maxId: Long): Unit = {
     features.rdd.filter(row => row.length > 0)
@@ -44,16 +44,18 @@ abstract class GNN[PSModel <: GNNPSModel](val uid: String) extends Serializable
       .map(_.init(model)).count()
   }
 
-  def makeModel(minId: Long, maxId: Long, index: RDD[Long]): PSModel
+  def makeModel(): Model
+
+  def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Model): PSModel
 
   def makeGraph(edges: RDD[(Long, Long)], model: PSModel): Dataset[_]
 
-  def initialize(edgeDF: DataFrame, featureDF: DataFrame): (PSModel, Dataset[_]) =
+  def initialize(edgeDF: DataFrame, featureDF: DataFrame): (Model, PSModel, Dataset[_]) =
     initialize(edgeDF, featureDF, None)
 
   def initialize(edgeDF: DataFrame,
                  featureDF: DataFrame,
-                 labelDF: Option[DataFrame]): (PSModel, Dataset[_]) = {
+                 labelDF: Option[DataFrame]): (Model, PSModel, Dataset[_]) = {
     val start = System.currentTimeMillis()
 
     // read edges
@@ -70,16 +72,18 @@ abstract class GNN[PSModel <: GNNPSModel](val uid: String) extends Serializable
 
     PSContext.getOrCreate(SparkContext.getOrCreate())
 
-    val model = makeModel(minId, maxId + 1, index)
+    val model = makeModel()
 
-    labelDF.foreach(f => initLabels(model, f, minId, maxId))
-    initFeatures(model, featureDF, minId, maxId)
+    val psModel = makePSModel(minId, maxId + 1, index, model)
 
-    val graph = makeGraph(edges, model)
+    labelDF.foreach(f => initLabels(psModel, f, minId, maxId))
+    initFeatures(psModel, featureDF, minId, maxId)
+
+    val graph = makeGraph(edges, psModel)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")
 
-    (model, graph)
+    (model, psModel, graph)
   }
 }

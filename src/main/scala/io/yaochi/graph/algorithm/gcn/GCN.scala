@@ -7,9 +7,13 @@ import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-class GCN extends GNN[GCNPSModel] with HasTestRatio {
+class GCN extends GNN[GCNPSModel, GCNModel] with HasTestRatio {
 
-  override def makeModel(minId: Long, maxId: Long, index: RDD[Long]): GCNPSModel = {
+  override def makeModel(): GCNModel = {
+    null
+  }
+
+  override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GCNModel): GCNPSModel = {
     GCNPSModel.apply(minId, maxId + 1, 0, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
@@ -34,17 +38,17 @@ class GCN extends GNN[GCNPSModel] with HasTestRatio {
     SparkSession.builder().getOrCreate().createDataset(gcnGraph)
   }
 
-  override def fit(model: GCNPSModel, graph: Dataset[_]): Unit = {
+  override def fit(model: GCNModel, psModel: GCNPSModel, graph: Dataset[_]): Unit = {
     val optim = getOptimizer
 
-    val (trainSize, testSize) = graph.rdd.map(_.asInstanceOf[GCNPartition].getTrainTestSize())
+    val (trainSize, testSize) = graph.rdd.map(_.asInstanceOf[GCNPartition].getTrainTestSize)
       .reduce((f1, f2) => (f1._1 + f2._1, f1._2 + f2._2))
     println(s"numTrain=$trainSize numTest=$testSize testRatio=${$(testRatio)} samples=${$(numSamples)}")
 
     for (curEpoch <- 1 to $(numEpoch)) {
-      val (lossSum, trainRight) = graph.rdd.map(_.asInstanceOf[GCNPartition].trainEpoch(curEpoch, $(batchSize), model,
+      val (lossSum, trainRight) = graph.rdd.map(_.asInstanceOf[GCNPartition].trainEpoch(curEpoch, $(batchSize), psModel,
         $(featureDim), optim, $(numSamples))).reduce((f1, f2) => (f1._1 + f2._1, f1._2 + f2._2))
-      val predRight = graph.rdd.map(_.asInstanceOf[GCNPartition].predictEpoch(curEpoch, $(batchSize) * 10, model,
+      val predRight = graph.rdd.map(_.asInstanceOf[GCNPartition].predictEpoch(curEpoch, $(batchSize) * 10, psModel,
         $(featureDim), $(numSamples))).reduce(_ + _)
       println(s"curEpoch=$curEpoch " +
         s"train loss=${lossSum / trainSize} " +
@@ -54,4 +58,6 @@ class GCN extends GNN[GCNPSModel] with HasTestRatio {
   }
 
   override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
+
+
 }
