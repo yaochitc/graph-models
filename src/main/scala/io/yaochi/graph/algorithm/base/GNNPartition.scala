@@ -2,11 +2,11 @@ package io.yaochi.graph.algorithm.base
 
 import io.yaochi.graph.optim.AsyncOptim
 
-abstract class GNNPartition[PSModel <: GNNPSModel](index: Int,
-                                                   keys: Array[Long],
-                                                   indptr: Array[Int],
-                                                   neighbors: Array[Long],
-                                                   useSecondOrder: Boolean) extends Serializable {
+abstract class GNNPartition[PSModel <: GNNPSModel, Model <: GNNModel](index: Int,
+                                                                      keys: Array[Long],
+                                                                      indptr: Array[Int],
+                                                                      neighbors: Array[Long],
+                                                                      useSecondOrder: Boolean) extends Serializable {
 
   def numNodes: Long = keys.length
 
@@ -14,7 +14,8 @@ abstract class GNNPartition[PSModel <: GNNPSModel](index: Int,
 
   def trainEpoch(curEpoch: Int,
                  batchSize: Int,
-                 model: PSModel,
+                 model: Model,
+                 psModel: PSModel,
                  featureDim: Int,
                  optim: AsyncOptim,
                  numSample: Int): (Double, Long)

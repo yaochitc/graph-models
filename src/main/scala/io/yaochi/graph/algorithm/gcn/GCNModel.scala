@@ -25,3 +25,9 @@ class GCNModel(inputDim: Int,
     0f
   }
 }
+
+object GCNModel {
+  def apply(inputDim: Int,
+            hiddenDim: Int,
+            numClasses: Int): GCNModel = new GCNModel(inputDim, hiddenDim, numClasses)
+}

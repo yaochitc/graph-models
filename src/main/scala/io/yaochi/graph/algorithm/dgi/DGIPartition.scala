@@ -9,11 +9,12 @@ class DGIPartition(index: Int,
                    indptr: Array[Int],
                    neighbors: Array[Long],
                    useSecondOrder: Boolean) extends
-  GNNPartition[DGIPSModel](index, keys, indptr, neighbors, useSecondOrder) {
+  GNNPartition[DGIPSModel, DGIModel](index, keys, indptr, neighbors, useSecondOrder) {
 
   override def trainEpoch(curEpoch: Int,
                           batchSize: Int,
-                          model: DGIPSModel,
+                          model: DGIModel,
+                          psModel: DGIPSModel,
                           featureDim: Int,
                           optim: AsyncOptim,
                           numSample: Int): (Double, Long) = {
@@ -25,7 +26,7 @@ class DGIPartition(index: Int,
     var lossSum = 0.0
     while (batchIterator.hasNext) {
       val batch = batchIterator.next().toArray
-      val loss = trainBatch(batch, model, featureDim, optim, numSample,
+      val loss = trainBatch(batch, model, psModel, featureDim, optim, numSample,
         srcs, dsts, batchKeys, index)
       lossSum += loss * batch.length
       srcs.clear()
@@ -38,7 +39,8 @@ class DGIPartition(index: Int,
   }
 
   def trainBatch(batchIdx: Array[Int],
-                 model: DGIPSModel,
+                 model: DGIModel,
+                 psModel: DGIPSModel,
                  featureDim: Int,
                  optim: AsyncOptim,
                  numSample: Int,
@@ -54,16 +56,16 @@ class DGIPartition(index: Int,
 
     val (first, second) = MakeEdgeIndex.makeEdgeIndex(batchIdx,
       keys, indptr, neighbors, srcs, dsts, batchKeys,
-      index, numSample, model, useSecondOrder)
+      index, numSample, psModel, useSecondOrder)
 
-    val posx = MakeFeature.makeFeatures(index, featureDim, model)
-    val negx = MakeFeature.sampleFeatures(index.size(), featureDim, model)
+    val posx = MakeFeature.makeFeatures(index, featureDim, psModel)
+    val negx = MakeFeature.sampleFeatures(index.size(), featureDim, psModel)
     assert(posx.length == negx.length)
-    val weights = model.readWeights()
+    val weights = psModel.readWeights()
 
     val loss = 0
 
-    model.step(weights, optim)
+    psModel.step(weights, optim)
     loss
   }
 }

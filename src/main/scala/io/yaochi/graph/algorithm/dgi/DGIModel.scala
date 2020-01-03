@@ -15,3 +15,8 @@ class DGIModel(inputDim: Int,
     0f
   }
 }
+
+object DGIModel {
+  def apply(inputDim: Int,
+            hiddenDim: Int): DGIModel = new DGIModel(inputDim, hiddenDim)
+}

@@ -12,13 +12,14 @@ class GCNPartition(index: Int,
                    trainLabels: Array[Float],
                    testIdx: Array[Int],
                    testLabels: Array[Float]) extends
-  GNNPartition[GCNPSModel](index, keys, indptr, neighbors, true) {
+  GNNPartition[GCNPSModel, GCNModel](index, keys, indptr, neighbors, true) {
 
   def getTrainTestSize: (Int, Int) = (trainIdx.length, testIdx.length)
 
   override def trainEpoch(curEpoch: Int,
                           batchSize: Int,
-                          model: GCNPSModel,
+                          model: GCNModel,
+                          psModel: GCNPSModel,
                           featureDim: Int,
                           optim: AsyncOptim,
                           numSample: Int): (Double, Long) = {
@@ -32,7 +33,7 @@ class GCNPartition(index: Int,
 
     while (batchIterator.hasNext) {
       val batch = batchIterator.next()
-      val (loss, right) = trainBatch(batch, model, featureDim,
+      val (loss, right) = trainBatch(batch, model, psModel, featureDim,
         optim, numSample, srcs, dsts, batchKeys, index)
       lossSum += loss * batch.length
       numRight += right
@@ -46,7 +47,8 @@ class GCNPartition(index: Int,
   }
 
   def trainBatch(batchIdx: Array[(Int, Float)],
-                 model: GCNPSModel,
+                 model: GCNModel,
+                 psModel: GCNPSModel,
                  featureDim: Int,
                  optim: AsyncOptim,
                  numSample: Int,
@@ -65,12 +67,12 @@ class GCNPartition(index: Int,
 
     val (first, second) = MakeEdgeIndex.makeEdgeIndex(batchIdx.map(f => f._1),
       keys, indptr, neighbors, srcs, dsts,
-      batchKeys, index, numSample, model, true)
-    val x = MakeFeature.makeFeatures(index, featureDim, model)
+      batchKeys, index, numSample, psModel, true)
+    val x = MakeFeature.makeFeatures(index, featureDim, psModel)
 
-    val weights = model.readWeights()
+    val weights = psModel.readWeights()
     val loss = 0
-    model.step(weights, optim)
+    psModel.step(weights, optim)
 
     var right: Long = 0
     (loss, right)
@@ -78,7 +80,8 @@ class GCNPartition(index: Int,
 
   def predictEpoch(curEpoch: Int,
                    batchSize: Int,
-                   model: GCNPSModel,
+                   model: GCNModel,
+                   psModel: GCNPSModel,
                    featureDim: Int,
                    numSample: Int): Long = {
     val index = new Long2IntOpenHashMap()
@@ -87,11 +90,11 @@ class GCNPartition(index: Int,
     val batchKeys = new LongOpenHashSet()
     val batchIterator = testIdx.zip(testLabels).sliding(batchSize, batchSize)
     var numRight: Int = 0
-    val weights = model.readWeights()
+    val weights = psModel.readWeights()
 
     while (batchIterator.hasNext) {
       val batch = batchIterator.next()
-      val right = predictBatch(batch, model, featureDim, numSample,
+      val right = predictBatch(batch, model, psModel, featureDim, numSample,
         srcs, dsts, batchKeys, index, weights)
       numRight += right
       srcs.clear()
@@ -104,7 +107,8 @@ class GCNPartition(index: Int,
   }
 
   def predictBatch(batchIdx: Array[(Int, Float)],
-                   model: GNNPSModel,
+                   model: GCNModel,
+                   psModel: GCNPSModel,
                    featureDim: Int,
                    numSample: Int,
                    srcs: LongArrayList,
@@ -123,8 +127,8 @@ class GCNPartition(index: Int,
 
     val (first, second) = MakeEdgeIndex.makeEdgeIndex(batchIdx.map(f => f._1),
       keys, indptr, neighbors, srcs, dsts,
-      batchKeys, index, numSample, model, true)
-    val x = MakeFeature.makeFeatures(index, featureDim, model)
+      batchKeys, index, numSample, psModel, true)
+    val x = MakeFeature.makeFeatures(index, featureDim, psModel)
     var right = 0
     right
   }

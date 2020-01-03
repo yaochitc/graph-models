@@ -1,15 +1,17 @@
 package io.yaochi.graph.algorithm.dgi
 
 import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
-import io.yaochi.graph.params.HasUseSecondOrder
+import io.yaochi.graph.params.{HasHiddenDim, HasInputDim, HasUseSecondOrder}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-class DGI extends GNN[DGIPSModel, DGIModel] with HasUseSecondOrder {
+class DGI extends GNN[DGIPSModel, DGIModel]
+  with HasInputDim with HasHiddenDim
+  with HasUseSecondOrder {
 
-  override def makeModel(): DGIModel = ???
+  override def makeModel(): DGIModel = DGIModel($(inputDim), $(hiddenDim))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: DGIModel): DGIPSModel = {
     DGIPSModel.apply(minId, maxId + 1, 0, getOptimizer,
@@ -42,7 +44,7 @@ class DGI extends GNN[DGIPSModel, DGIModel] with HasUseSecondOrder {
 
     for (curEpoch <- 1 to $(numEpoch)) {
       val (lossSum, totalTrain) = graph.rdd.map(_.asInstanceOf[DGIPartition]
-        .trainEpoch(curEpoch, $(batchSize), psModel, $(featureDim), optim, $(numSamples)))
+        .trainEpoch(curEpoch, $(batchSize), model, psModel, $(featureDim), optim, $(numSamples)))
         .reduce((f1, f2) => (f1._1 + f2._1, f1._2 + f2._2))
       println(s"curEpoch=$curEpoch train loss=${lossSum / totalTrain}")
     }

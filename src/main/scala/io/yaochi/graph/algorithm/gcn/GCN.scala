@@ -1,17 +1,17 @@
 package io.yaochi.graph.algorithm.gcn
 
 import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
-import io.yaochi.graph.params.HasTestRatio
+import io.yaochi.graph.params.{HasHiddenDim, HasInputDim, HasNumClasses, HasTestRatio}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-class GCN extends GNN[GCNPSModel, GCNModel] with HasTestRatio {
+class GCN extends GNN[GCNPSModel, GCNModel]
+  with HasInputDim with HasHiddenDim
+  with HasNumClasses with HasTestRatio {
 
-  override def makeModel(): GCNModel = {
-    null
-  }
+  override def makeModel(): GCNModel = GCNModel($(inputDim), $(hiddenDim), $(numClasses))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GCNModel): GCNPSModel = {
     GCNPSModel.apply(minId, maxId + 1, 0, getOptimizer,
@@ -46,9 +46,9 @@ class GCN extends GNN[GCNPSModel, GCNModel] with HasTestRatio {
     println(s"numTrain=$trainSize numTest=$testSize testRatio=${$(testRatio)} samples=${$(numSamples)}")
 
     for (curEpoch <- 1 to $(numEpoch)) {
-      val (lossSum, trainRight) = graph.rdd.map(_.asInstanceOf[GCNPartition].trainEpoch(curEpoch, $(batchSize), psModel,
+      val (lossSum, trainRight) = graph.rdd.map(_.asInstanceOf[GCNPartition].trainEpoch(curEpoch, $(batchSize), model, psModel,
         $(featureDim), optim, $(numSamples))).reduce((f1, f2) => (f1._1 + f2._1, f1._2 + f2._2))
-      val predRight = graph.rdd.map(_.asInstanceOf[GCNPartition].predictEpoch(curEpoch, $(batchSize) * 10, psModel,
+      val predRight = graph.rdd.map(_.asInstanceOf[GCNPartition].predictEpoch(curEpoch, $(batchSize) * 10, model, psModel,
         $(featureDim), $(numSamples))).reduce(_ + _)
       println(s"curEpoch=$curEpoch " +
         s"train loss=${lossSum / trainSize} " +
