@@ -1,20 +1,20 @@
 package io.yaochi.graph.algorithm.gcn
 
 import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
-import io.yaochi.graph.params.{HasHiddenDim, HasInputDim, HasNumClasses, HasTestRatio}
+import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 class GCN extends GNN[GCNPSModel, GCNModel]
-  with HasInputDim with HasHiddenDim
-  with HasNumClasses with HasTestRatio {
+  with HasHiddenDim with HasNumClasses
+  with HasTestRatio {
 
-  override def makeModel(): GCNModel = GCNModel($(inputDim), $(hiddenDim), $(numClasses))
+  override def makeModel(): GCNModel = GCNModel($(hiddenDim), $(numClasses))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GCNModel): GCNPSModel = {
-    GCNPSModel.apply(minId, maxId + 1, 0, getOptimizer,
+    GCNPSModel.apply(minId, maxId + 1, 10, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
 

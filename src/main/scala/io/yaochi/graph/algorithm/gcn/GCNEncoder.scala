@@ -1,0 +1,80 @@
+package io.yaochi.graph.algorithm.gcn
+
+import com.intel.analytics.bigdl.nn.{Linear, Reshape, Scatter, Sequential}
+import com.intel.analytics.bigdl.tensor.Tensor
+import io.yaochi.graph.util.LayerUtil
+
+class GCNEncoder(batchSize: Int,
+                 inputDim: Int,
+                 outputDim: Int,
+                 weights: Array[Float],
+                 start: Int = 0,
+                 reshape: Boolean = false) {
+  private val linearLayer = buildLinearLayer()
+  private val linearModule = buildLinearModule()
+
+  private val convLayer = buildConvModule()
+
+  def forward(x: Tensor[Float],
+              indices: Tensor[Float],
+              norms: Tensor[Float]): Tensor[Float] = {
+    val linearOutput = linearLayer.forward(x)
+      .toTensor[Float]
+    convLayer.forward(linearOutput)
+      .toTensor[Float]
+  }
+
+  def backward(x: Tensor[Float],
+               indices: Tensor[Float],
+               norms: Tensor[Float],
+               gradOutput: Tensor[Float]): Tensor[Float] = {
+    val gradTensor = linearModule.backward(x, gradOutput).toTensor[Float]
+
+    val gradWeight = linearLayer.gradWeight
+    val gradBias = linearLayer.gradBias
+
+    val gradWeightSize = gradWeight.size()
+    val outputSize = gradWeightSize(0)
+    val inputSize = gradWeightSize(1)
+
+    var curOffset = start
+    for (i <- 0 until outputSize; j <- 0 until inputSize) {
+      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
+    }
+    curOffset += outputSize * inputSize
+
+    for (i <- 0 until outputSize) {
+      weights(curOffset + i) = gradBias.valueAt(i + 1)
+    }
+    curOffset += outputSize
+
+    gradTensor
+  }
+
+  private def buildLinearLayer(): Linear[Float] = {
+    LayerUtil.buildLinear(inputDim, outputDim, weights, start)
+  }
+
+  private def buildLinearModule(): Sequential[Float] = {
+    var module = Sequential[Float]()
+    if (reshape) {
+      module = module.add(Reshape(Array(batchSize, inputDim)))
+    }
+    module.add(linearLayer)
+  }
+
+  private def buildConvModule(): Scatter[Float] = {
+    new Scatter[Float](batchSize, outputDim)
+  }
+
+  def parameterSize: Int = inputDim * outputDim + outputDim
+}
+
+object GCNEncoder {
+  def apply(batchSize: Int,
+            inputDim: Int,
+            outputDim: Int,
+            weights: Array[Float],
+            start: Int = 0,
+            reshape: Boolean = false): GCNEncoder = new GCNEncoder(batchSize, inputDim, outputDim, weights, start, reshape)
+}
