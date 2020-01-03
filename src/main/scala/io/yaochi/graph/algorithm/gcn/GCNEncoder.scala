@@ -18,7 +18,7 @@ class GCNEncoder(batchSize: Int,
   def forward(x: Tensor[Float],
               indices: Tensor[Float],
               norms: Tensor[Float]): Tensor[Float] = {
-    val linearOutput = linearLayer.forward(x)
+    val linearOutput = linearModule.forward(x)
       .toTensor[Float]
     convLayer.forward(linearOutput)
       .toTensor[Float]
@@ -67,7 +67,7 @@ class GCNEncoder(batchSize: Int,
     new Scatter[Float](batchSize, outputDim)
   }
 
-  def parameterSize: Int = inputDim * outputDim + outputDim
+  def getParameterSize: Int = inputDim * outputDim + outputDim
 }
 
 object GCNEncoder {
