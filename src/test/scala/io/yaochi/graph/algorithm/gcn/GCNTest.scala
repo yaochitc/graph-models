@@ -22,6 +22,8 @@ class GCNTest {
   @Test
   def testGCN(): Unit = {
     val gcn = new GCN()
+    gcn.setDataFormat("dense")
+    gcn.setFeatureDim(1433)
     gcn.setOptimizer("adam")
     gcn.setUseBalancePartition(false)
     gcn.setBatchSize(100)

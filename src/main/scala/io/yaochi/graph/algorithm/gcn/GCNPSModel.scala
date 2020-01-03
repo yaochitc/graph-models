@@ -63,7 +63,8 @@ object GCNPSModel {
     val labelsId = PSAgentContext.get().getMasterClient.getMatrix("labels").getId
 
     new GCNPSModel(new PSMatrixImpl(graphId, 1, maxId, graph.getRowType),
-      new PSVectorImpl(weightsId, 0, weights.getColNum, weights.getRowType),
-      new PSVectorImpl(labelsId, 0, maxId, labels.getRowType))
+      new PSVectorImpl(labelsId, 0, maxId, labels.getRowType),
+      new PSVectorImpl(weightsId, 0, weights.getColNum, weights.getRowType)
+    )
   }
 }
