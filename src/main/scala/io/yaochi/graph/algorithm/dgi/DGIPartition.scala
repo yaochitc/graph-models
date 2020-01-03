@@ -63,7 +63,8 @@ class DGIPartition(index: Int,
     assert(posx.length == negx.length)
     val weights = psModel.readWeights()
 
-    val loss = 0
+    val loss = model.backward(batchIdx.length, posx, negx,
+      featureDim, first, second, weights)
 
     psModel.step(weights, optim)
     loss
