@@ -71,7 +71,7 @@ object GraphIO {
 
     var schema = StructType(Seq(
       StructField("node", LongType, nullable = false),
-      StructField("label", LongType, nullable = false)
+      StructField("label", FloatType, nullable = false)
     ))
 
     ss.read

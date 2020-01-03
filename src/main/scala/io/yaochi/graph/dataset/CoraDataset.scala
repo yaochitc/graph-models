@@ -3,7 +3,7 @@ package io.yaochi.graph.dataset
 import java.nio.file.Paths
 
 import io.yaochi.graph.util.GraphIO
-import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
 import scala.collection.immutable.HashMap
@@ -18,7 +18,7 @@ object CoraDataset {
     val nodeSchema = StructType(Seq(
       StructField("node", LongType, nullable = false),
       StructField("feature", StringType, nullable = false),
-      StructField("label", LongType, nullable = false)
+      StructField("label", FloatType, nullable = false)
     ))
 
     val nodeRDD = ss.sparkContext.textFile(contentInput.toString)
@@ -45,7 +45,7 @@ object CoraDataset {
       val featureSum = features.sum + 1e-15
       val normFeatures = features.map(feature => feature / featureSum)
         .mkString(" ")
-      val label = label2IdBc.value(fields.last).toLong
+      val label = label2IdBc.value(fields.last).toFloat
       Row(id, normFeatures, label)
     })
 
