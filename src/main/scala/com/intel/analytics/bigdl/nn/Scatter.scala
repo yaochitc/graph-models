@@ -53,7 +53,8 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
   override def updateGradInput(input: Table, gradOutput: Tensor[T]): Table = {
     val inputTensor = input[Tensor[T]](1)
     val weightTensor = input[Tensor[T]](2)
-    val indexTensor = input[Tensor[Int]](3)
+    val srcIndexTensor = input[Tensor[Int]](3)
+    val dstIndexTensor = input[Tensor[Int]](4)
 
     val gradTensor = gradInput[Tensor[T]](1)
     gradTensor.resizeAs(inputTensor)
@@ -62,16 +63,16 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
       weightTensor.storageOffset(),
       Array(weightTensor.nElement()))
 
-    srcIndexBuffer.set(srcIndexBuffer.storage(),
-      srcIndexBuffer.storageOffset(),
-      Array(srcIndexBuffer.nElement()))
+    srcIndexBuffer.set(srcIndexTensor.storage(),
+      srcIndexTensor.storageOffset(),
+      Array(srcIndexTensor.nElement()))
 
-    dstIndexBuffer.set(dstIndexBuffer.storage(),
-      dstIndexBuffer.storageOffset(),
-      Array(dstIndexBuffer.nElement()))
+    dstIndexBuffer.set(dstIndexTensor.storage(),
+      dstIndexTensor.storageOffset(),
+      Array(dstIndexTensor.nElement()))
 
     var i = 0
-    while (i < indexTensor.nElement()) {
+    while (i < weightTensor.nElement()) {
       val srcIndex = srcIndexBuffer.valueAt(i + 1)
       val dstIndex = dstIndexBuffer.valueAt(i + 1)
       val weight = weightBuffer.valueAt(srcIndex + 1)
