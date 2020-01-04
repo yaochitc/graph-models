@@ -71,9 +71,9 @@ class GCNPartition(index: Int,
     val x = MakeFeature.makeFeatures(index, featureDim, psModel)
 
     val weights = psModel.readWeights()
-    val outputs = model.forward(batchIdx.length, x, featureDim,
+    val outputs = model.forward(batchIdx.length, x,
       first, second, weights)
-    val loss = model.backward(batchIdx.length, x, featureDim,
+    val loss = model.backward(batchIdx.length, x,
       first, second, weights, targets)
     psModel.step(weights, optim)
 
@@ -135,7 +135,7 @@ class GCNPartition(index: Int,
       keys, indptr, neighbors, srcs, dsts,
       batchKeys, index, numSample, psModel, true)
     val x = MakeFeature.makeFeatures(index, featureDim, psModel)
-    val outputs = model.forward(batchIdx.length, x, featureDim,
+    val outputs = model.forward(batchIdx.length, x,
       first, second, weights)
     assert(outputs.length == targets.length)
     var right = 0

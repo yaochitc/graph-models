@@ -11,10 +11,10 @@ class GCN extends GNN[GCNPSModel, GCNModel]
   with HasHiddenDim with HasNumClasses
   with HasTestRatio {
 
-  override def makeModel(): GCNModel = GCNModel($(hiddenDim), $(numClasses))
+  override def makeModel(): GCNModel = GCNModel($(featureDim), $(hiddenDim), $(numClasses))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GCNModel): GCNPSModel = {
-    GCNPSModel.apply(minId, maxId + 1, 10, getOptimizer,
+    GCNPSModel.apply(minId, maxId + 1, model.getParameterSize, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
 

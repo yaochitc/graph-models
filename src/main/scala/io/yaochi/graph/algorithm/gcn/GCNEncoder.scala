@@ -2,6 +2,7 @@ package io.yaochi.graph.algorithm.gcn
 
 import com.intel.analytics.bigdl.nn.{Linear, Reshape, Scatter, Sequential}
 import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.utils.T
 import io.yaochi.graph.util.LayerUtil
 
 class GCNEncoder(batchSize: Int,
@@ -16,16 +17,16 @@ class GCNEncoder(batchSize: Int,
   private val convLayer = buildConvModule()
 
   def forward(x: Tensor[Float],
-              indices: Tensor[Float],
+              indices: Tensor[Int],
               norms: Tensor[Float]): Tensor[Float] = {
     val linearOutput = linearModule.forward(x)
       .toTensor[Float]
-    convLayer.forward(linearOutput)
+    convLayer.forward(T.array(Array(linearOutput, norms, indices)))
       .toTensor[Float]
   }
 
   def backward(x: Tensor[Float],
-               indices: Tensor[Float],
+               indices: Tensor[Int],
                norms: Tensor[Float],
                gradOutput: Tensor[Float]): Tensor[Float] = {
     val gradTensor = linearModule.backward(x, gradOutput).toTensor[Float]

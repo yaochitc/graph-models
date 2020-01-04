@@ -3,12 +3,19 @@ package io.yaochi.graph.algorithm.gcn
 import com.intel.analytics.bigdl.tensor.Tensor
 import io.yaochi.graph.algorithm.base.GNNModel
 
-class GCNModel(hiddenDim: Int,
+class GCNModel(inputDim: Int,
+               hiddenDim: Int,
                numClasses: Int) extends GNNModel {
+
+  def getParameterSize: Int = {
+    val conv1ParamSize = inputDim * hiddenDim + hiddenDim
+    val conv2ParamSize = hiddenDim * numClasses + numClasses
+    conv1ParamSize + conv2ParamSize
+  }
+
 
   def forward(batchSize: Int,
               x: Array[Float],
-              featureDim: Int,
               firstEdgeIndex: Array[Long],
               secondEdgeIndex: Array[Long],
               weights: Array[Float]): Array[Float] = {
@@ -20,13 +27,13 @@ class GCNModel(hiddenDim: Int,
     val firstEdgeIndicesTensor = Tensor.apply(firstEdgeIndices, Array(firstEdgeIndices.length))
     val firstEdgeNormsTensor = Tensor.apply(firstEdgeNorms, Array(firstEdgeNorms.length))
 
-    val numSecondOrderNodes = x.length / featureDim
+    val numSecondOrderNodes = x.length / inputDim
     val secondEdgeNorms = GCNModel.calcNorms(secondEdgeIndex, numSecondOrderNodes)
     val secondEdgeIndices = GCNModel.calcIndices(secondEdgeIndex)
     val secondEdgeIndicesTensor = Tensor.apply(secondEdgeIndices, Array(secondEdgeIndices.length))
     val secondEdgeNormsTensor = Tensor.apply(secondEdgeNorms, Array(secondEdgeNorms.length))
 
-    val secondEdgeEncoder = GCNEncoder(numSecondOrderNodes, featureDim, hiddenDim, weights, reshape = true)
+    val secondEdgeEncoder = GCNEncoder(numSecondOrderNodes, inputDim, hiddenDim, weights, reshape = true)
     val offset = secondEdgeEncoder.getParameterSize
     val secondEdgeOutput = secondEdgeEncoder.forward(xTensor, secondEdgeIndicesTensor, secondEdgeNormsTensor)
 
@@ -38,7 +45,6 @@ class GCNModel(hiddenDim: Int,
 
   def backward(batchSize: Int,
                x: Array[Float],
-               featureDim: Int,
                firstEdgeIndex: Array[Long],
                secondEdgeIndex: Array[Long],
                weights: Array[Float],
@@ -51,13 +57,13 @@ class GCNModel(hiddenDim: Int,
     val firstEdgeIndicesTensor = Tensor.apply(firstEdgeIndices, Array(firstEdgeIndices.length))
     val firstEdgeNormsTensor = Tensor.apply(firstEdgeNorms, Array(firstEdgeNorms.length))
 
-    val numSecondOrderNodes = x.length / featureDim
+    val numSecondOrderNodes = x.length / inputDim
     val secondEdgeNorms = GCNModel.calcNorms(secondEdgeIndex, numSecondOrderNodes)
     val secondEdgeIndices = GCNModel.calcIndices(secondEdgeIndex)
     val secondEdgeIndicesTensor = Tensor.apply(secondEdgeIndices, Array(secondEdgeIndices.length))
     val secondEdgeNormsTensor = Tensor.apply(secondEdgeNorms, Array(secondEdgeNorms.length))
 
-    val secondEdgeEncoder = GCNEncoder(numSecondOrderNodes, featureDim, hiddenDim, weights, reshape = true)
+    val secondEdgeEncoder = GCNEncoder(numSecondOrderNodes, inputDim, hiddenDim, weights, reshape = true)
     val offset = secondEdgeEncoder.getParameterSize
     val secondEdgeOutput = secondEdgeEncoder.forward(xTensor, secondEdgeIndicesTensor, secondEdgeNormsTensor)
 
@@ -69,8 +75,9 @@ class GCNModel(hiddenDim: Int,
 }
 
 object GCNModel {
-  def apply(hiddenDim: Int,
-            numClasses: Int): GCNModel = new GCNModel(hiddenDim, numClasses)
+  def apply(inputDim: Int,
+            hiddenDim: Int,
+            numClasses: Int): GCNModel = new GCNModel(inputDim, hiddenDim, numClasses)
 
 
   def calcNorms(edgeIndex: Array[Long], numNodes: Int): Array[Float] = {
@@ -90,9 +97,9 @@ object GCNModel {
     norms
   }
 
-  def calcIndices(edgeIndex: Array[Long]): Array[Float] = {
+  def calcIndices(edgeIndex: Array[Long]): Array[Int] = {
     val size = edgeIndex.length / 2
-    val indices = Array.ofDim[Float](size)
+    val indices = Array.ofDim[Int](size)
     for (i <- 0 until size) {
       indices(i) += edgeIndex(size + i).toInt
     }
