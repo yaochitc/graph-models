@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.gcn
 
-import com.intel.analytics.bigdl.nn.{Linear, Reshape, Scatter, Sequential}
+import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.T
 import io.yaochi.graph.util.LayerUtil
@@ -15,6 +15,7 @@ class GCNEncoder(batchSize: Int,
   private val linearModule = buildLinearModule()
 
   private val convLayer = buildConvModule()
+  private val biasLayer = buildBiasModule()
 
   def forward(x: Tensor[Float],
               srcIndices: Tensor[Int],
@@ -22,8 +23,9 @@ class GCNEncoder(batchSize: Int,
               norms: Tensor[Float]): Tensor[Float] = {
     val linearOutput = linearModule.forward(x)
       .toTensor[Float]
-    convLayer.forward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)))
+    val convOutput = convLayer.forward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)))
       .toTensor[Float]
+    biasLayer.forward(convOutput)
   }
 
   def backward(x: Tensor[Float],
@@ -31,13 +33,15 @@ class GCNEncoder(batchSize: Int,
                dstIndices: Tensor[Int],
                norms: Tensor[Float],
                gradOutput: Tensor[Float]): Tensor[Float] = {
+    val convOutput = convLayer.output.toTensor[Float]
+    val biasGradOutput = biasLayer.backward(convOutput, gradOutput)
     val linearOutput = linearModule.output.toTensor[Float]
-    val gradTable = convLayer.backward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)), gradOutput).toTable
+    val gradTable = convLayer.backward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)), biasGradOutput).toTable
 
     val gradTensor = linearModule.backward(x, gradTable[Tensor[Float]](1)).toTensor[Float]
 
     val gradWeight = linearLayer.gradWeight
-    val gradBias = linearLayer.gradBias
+    val gradBias = biasLayer.gradBias
 
     val gradWeightSize = gradWeight.size()
     val outputSize = gradWeightSize(0)
@@ -58,7 +62,7 @@ class GCNEncoder(batchSize: Int,
   }
 
   private def buildLinearLayer(): Linear[Float] = {
-    LayerUtil.buildLinear(inputDim, outputDim, weights, start)
+    LayerUtil.buildLinear(inputDim, outputDim, weights, false, start)
   }
 
   private def buildLinearModule(): Sequential[Float] = {
@@ -71,6 +75,10 @@ class GCNEncoder(batchSize: Int,
 
   private def buildConvModule(): Scatter[Float] = {
     new Scatter[Float](batchSize, outputDim)
+  }
+
+  private def buildBiasModule(): CAdd[Float] = {
+    LayerUtil.buildBias(outputDim, weights, start + inputDim * outputDim)
   }
 
   def getParameterSize: Int = inputDim * outputDim + outputDim

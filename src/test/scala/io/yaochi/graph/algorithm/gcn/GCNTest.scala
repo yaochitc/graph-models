@@ -33,7 +33,7 @@ class GCNTest {
     gcn.setPSPartitionNum(10)
     gcn.setPartitionNum(1)
     gcn.setUseBalancePartition(false)
-    gcn.setNumEpoch(10)
+    gcn.setNumEpoch(100)
     gcn.setStorageLevel("MEMORY_ONLY")
     gcn.setTestRatio(0.5f)
 
