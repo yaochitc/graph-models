@@ -3,10 +3,13 @@ package io.yaochi.graph.algorithm.dgi
 import io.yaochi.graph.algorithm.base.GNNModel
 
 class DGIModel(inputDim: Int,
-               hiddenDim: Int) extends GNNModel {
+               hiddenDim: Int,
+               outputDim: Int) extends GNNModel {
 
   def getParameterSize: Int = {
-    0
+    val conv1ParamSize = 2 * inputDim * hiddenDim + hiddenDim
+    val conv2ParamSize = 2 * hiddenDim * outputDim + outputDim
+    conv1ParamSize + conv2ParamSize + hiddenDim + outputDim
   }
 
   def backward(batchSize: Int,
@@ -22,5 +25,6 @@ class DGIModel(inputDim: Int,
 
 object DGIModel {
   def apply(inputDim: Int,
-            hiddenDim: Int): DGIModel = new DGIModel(inputDim, hiddenDim)
+            hiddenDim: Int,
+            outputDim: Int): DGIModel = new DGIModel(inputDim, hiddenDim, outputDim)
 }

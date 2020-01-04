@@ -25,6 +25,7 @@ class DGITest {
     dgi.setDataFormat("dense")
     dgi.setFeatureDim(1433)
     dgi.setHiddenDim(100)
+    dgi.setOutputDim(20)
     dgi.setOptimizer("adam")
     dgi.setUseBalancePartition(false)
     dgi.setBatchSize(100)
@@ -36,7 +37,7 @@ class DGITest {
     dgi.setStorageLevel("MEMORY_ONLY")
 
     val (edges, features, labels) = CoraDataset.load("data/cora")
-    val (model, psModel, graph) = dgi.initialize(edges, features, Option(labels))
+    val (model, psModel, graph) = dgi.initialize(edges, features, None)
     dgi.fit(model, psModel, graph)
 
   }
