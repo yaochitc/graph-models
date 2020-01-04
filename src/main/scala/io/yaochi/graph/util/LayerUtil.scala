@@ -1,6 +1,6 @@
 package io.yaochi.graph.util
 
-import com.intel.analytics.bigdl.nn.{CAdd, Linear}
+import com.intel.analytics.bigdl.nn.{CAdd, Linear, PReLU}
 import com.intel.analytics.bigdl.tensor.Tensor
 
 object LayerUtil {
@@ -27,9 +27,9 @@ object LayerUtil {
     }
   }
 
-  def buildBias(outputSize: Int,
-                mats: Array[Float],
-                offset: Int): CAdd[Float] = {
+  def buildBiasLayer(outputSize: Int,
+                     mats: Array[Float],
+                     offset: Int): CAdd[Float] = {
     val biasLayer = CAdd[Float](Array(outputSize))
 
     val biasTensor = biasLayer.bias
@@ -39,4 +39,18 @@ object LayerUtil {
 
     biasLayer
   }
+
+  def buildPReluLayer(outputSize: Int,
+                      mats: Array[Float],
+                      offset: Int): PReLU[Float] = {
+    val preluLayer = PReLU[Float](outputSize)
+
+    val preluTensor = preluLayer.weight
+    for (i <- 0 until outputSize) {
+      preluTensor.setValue(i + 1, mats(offset + i))
+    }
+
+    preluLayer
+  }
+
 }

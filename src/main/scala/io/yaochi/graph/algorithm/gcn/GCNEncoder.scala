@@ -76,7 +76,7 @@ class GCNEncoder(batchSize: Int,
   }
 
   private def buildBiasLayer(): CAdd[Float] = {
-    LayerUtil.buildBias(outputDim, weights, start + inputDim * outputDim)
+    LayerUtil.buildBiasLayer(outputDim, weights, start + inputDim * outputDim)
   }
 
   private def buildConvModule(): Sequential[Float] = {

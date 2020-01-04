@@ -31,18 +31,19 @@ class DGIModel(inputDim: Int,
     val secondEdgeSrcIndicesTensor = Tensor.apply(secondEdgeSrcIndices, Array(secondEdgeSrcIndices.length))
     val secondEdgeDstIndicesTensor = Tensor.apply(secondEdgeDstIndices, Array(secondEdgeDstIndices.length))
 
-    val secondEdgeEncoder = DGIEncoder(inputDim, hiddenDim, weights, reshape = true)
+    val secondEdgeEncoder = DGIEncoder(batchSize, inputDim, hiddenDim, weights, reshape = true)
     val offset = secondEdgeEncoder.getParameterSize
-    val firstEdgeEncoder = DGIEncoder(hiddenDim, outputDim, weights, offset)
+    val firstEdgeEncoder = DGIEncoder(batchSize, hiddenDim, outputDim, weights, offset)
 
-    val (secondPosEdgeOutput, secondNegEdgeOutput) = secondEdgeEncoder.forward(posXTensor,
+    val secondEdgeOutputTable = secondEdgeEncoder.forward(posXTensor,
       negXTensor,
       secondEdgeSrcIndicesTensor,
       secondEdgeDstIndicesTensor)
-    val (posLogits, negLogits) = firstEdgeEncoder.forward(secondPosEdgeOutput,
-      secondNegEdgeOutput,
+    val logitsTable = firstEdgeEncoder.forward(secondEdgeOutputTable[Tensor[Float]](1),
+      secondEdgeOutputTable[Tensor[Float]](2),
       firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor)
+
 
     0f
   }
