@@ -17,16 +17,18 @@ class GCNEncoder(batchSize: Int,
   private val convLayer = buildConvModule()
 
   def forward(x: Tensor[Float],
-              indices: Tensor[Int],
+              srcIndices: Tensor[Int],
+              dstIndices: Tensor[Int],
               norms: Tensor[Float]): Tensor[Float] = {
     val linearOutput = linearModule.forward(x)
       .toTensor[Float]
-    convLayer.forward(T.array(Array(linearOutput, norms, indices)))
+    convLayer.forward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)))
       .toTensor[Float]
   }
 
   def backward(x: Tensor[Float],
-               indices: Tensor[Int],
+               srcIndices: Tensor[Int],
+               dstIndices: Tensor[Int],
                norms: Tensor[Float],
                gradOutput: Tensor[Float]): Tensor[Float] = {
     val gradTensor = linearModule.backward(x, gradOutput).toTensor[Float]

@@ -24,6 +24,7 @@ class GCNTest {
     val gcn = new GCN()
     gcn.setDataFormat("dense")
     gcn.setFeatureDim(1433)
+    gcn.setNumClasses(7)
     gcn.setHiddenDim(100)
     gcn.setOptimizer("adam")
     gcn.setUseBalancePartition(false)

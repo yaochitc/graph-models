@@ -13,29 +13,37 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
   gradInput = T.array(Array(Tensor[T]()))
 
   private val weightBuffer: Tensor[T] = Tensor[T]()
-  private val indexBuffer: Tensor[Int] = Tensor[Int]()
+  private val srcIndexBuffer: Tensor[Int] = Tensor[Int]()
+  private val dstIndexBuffer: Tensor[Int] = Tensor[Int]()
 
   override def updateOutput(input: Table): Tensor[T] = {
     val inputTensor = input[Tensor[T]](1)
     val weightTensor = input[Tensor[T]](2)
-    val indexTensor = input[Tensor[Int]](3)
+    val srcIndexTensor = input[Tensor[Int]](3)
+    val dstIndexTensor = input[Tensor[Int]](4)
 
     weightBuffer.set(weightTensor.storage(),
       weightTensor.storageOffset(),
       Array(weightTensor.nElement()))
 
-    indexBuffer.set(indexTensor.storage(),
-      indexTensor.storageOffset(),
-      Array(indexTensor.nElement()))
+    srcIndexBuffer.set(srcIndexTensor.storage(),
+      srcIndexTensor.storageOffset(),
+      Array(srcIndexTensor.nElement()))
+
+    dstIndexBuffer.set(dstIndexTensor.storage(),
+      dstIndexTensor.storageOffset(),
+      Array(dstIndexTensor.nElement()))
 
     output.resize(batchSize, nOutput).zero()
     var i = 0
-    while (i < inputTensor.nElement()) {
-      val index = indexBuffer.valueAt(i + 1)
-      val weight = weightBuffer.valueAt(i + 1)
-      require(index < batchSize,
-        s"index should smaller than $batchSize, but got $index")
-      output.select(1, index + 1).add(inputTensor.select(1, i + 1).mul(weight))
+    while (i < weightTensor.nElement()) {
+      val srcIndex = srcIndexBuffer.valueAt(i + 1)
+      val dstIndex = dstIndexBuffer.valueAt(i + 1)
+      val weight = weightBuffer.valueAt(srcIndex + 1)
+
+      require(srcIndex < batchSize,
+        s"index should smaller than $batchSize, but got $srcIndex")
+      output.select(1, srcIndex + 1).add(inputTensor.select(1, dstIndex + 1).mul(weight))
       i += 1
     }
 
@@ -54,17 +62,23 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
       weightTensor.storageOffset(),
       Array(weightTensor.nElement()))
 
-    indexBuffer.set(indexTensor.storage(),
-      indexTensor.storageOffset(),
-      Array(indexTensor.nElement()))
+    srcIndexBuffer.set(srcIndexBuffer.storage(),
+      srcIndexBuffer.storageOffset(),
+      Array(srcIndexBuffer.nElement()))
+
+    dstIndexBuffer.set(dstIndexBuffer.storage(),
+      dstIndexBuffer.storageOffset(),
+      Array(dstIndexBuffer.nElement()))
 
     var i = 0
-    while (i < inputTensor.nElement()) {
-      val index = indexBuffer.valueAt(i + 1)
-      val weight = weightBuffer.valueAt(i + 1)
-      require(index < batchSize,
-        s"index should smaller than $batchSize, but got $index")
-      gradTensor.select(1, i + 1).copy(gradOutput.select(1, index + 1).mul(weight))
+    while (i < indexTensor.nElement()) {
+      val srcIndex = srcIndexBuffer.valueAt(i + 1)
+      val dstIndex = dstIndexBuffer.valueAt(i + 1)
+      val weight = weightBuffer.valueAt(srcIndex + 1)
+
+      require(srcIndex < batchSize,
+        s"index should smaller than $batchSize, but got $srcIndex")
+      gradTensor.select(1, srcIndex + 1).copy(gradOutput.select(1, dstIndex + 1).mul(weight))
       i += 1
     }
 
@@ -73,7 +87,8 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
 
   override def clearState(): this.type = {
     super.clearState()
-    indexBuffer.set()
+    srcIndexBuffer.set()
+    dstIndexBuffer.set()
     weightBuffer.set()
     this
   }
