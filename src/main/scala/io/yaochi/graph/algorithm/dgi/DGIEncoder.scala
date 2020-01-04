@@ -8,7 +8,8 @@ class DGIEncoder(inputDim: Int,
                  start: Int = 0,
                  reshape: Boolean = false) {
 
-  def forward(x: Tensor[Float],
+  def forward(posX: Tensor[Float],
+              negX: Tensor[Float],
               srcIndices: Tensor[Int],
               dstIndices: Tensor[Int]): Tensor[Float] = {
     null
@@ -22,4 +23,12 @@ class DGIEncoder(inputDim: Int,
   }
 
   def getParameterSize: Int = 2 * inputDim * outputDim + outputDim
+}
+
+object DGIEncoder {
+  def apply(inputDim: Int,
+            outputDim: Int,
+            weights: Array[Float],
+            start: Int = 0,
+            reshape: Boolean = false): DGIEncoder = new DGIEncoder(inputDim, outputDim, weights, start, reshape)
 }

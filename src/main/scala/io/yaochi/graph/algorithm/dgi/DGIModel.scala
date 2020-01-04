@@ -1,5 +1,6 @@
 package io.yaochi.graph.algorithm.dgi
 
+import com.intel.analytics.bigdl.tensor.Tensor
 import io.yaochi.graph.algorithm.base.GNNModel
 
 class DGIModel(inputDim: Int,
@@ -19,6 +20,30 @@ class DGIModel(inputDim: Int,
                firstEdgeIndex: Array[Long],
                secondEdgeIndex: Array[Long],
                weights: Array[Float]): Float = {
+    val posXTensor = Tensor.apply(posX, Array(posX.length))
+    val negXTensor = Tensor.apply(negX, Array(negX.length))
+
+    val (firstEdgeSrcIndices, firstEdgeDstIndices) = DGIModel.calcIndices(firstEdgeIndex)
+    val firstEdgeSrcIndicesTensor = Tensor.apply(firstEdgeSrcIndices, Array(firstEdgeSrcIndices.length))
+    val firstEdgeDstIndicesTensor = Tensor.apply(firstEdgeDstIndices, Array(firstEdgeDstIndices.length))
+
+    val (secondEdgeSrcIndices, secondEdgeDstIndices) = DGIModel.calcIndices(secondEdgeIndex)
+    val secondEdgeSrcIndicesTensor = Tensor.apply(secondEdgeSrcIndices, Array(secondEdgeSrcIndices.length))
+    val secondEdgeDstIndicesTensor = Tensor.apply(secondEdgeDstIndices, Array(secondEdgeDstIndices.length))
+
+    val secondEdgeEncoder = DGIEncoder(inputDim, hiddenDim, weights, reshape = true)
+    val offset = secondEdgeEncoder.getParameterSize
+    val firstEdgeEncoder = DGIEncoder(hiddenDim, outputDim, weights, offset)
+
+    val (secondPosEdgeOutput, secondNegEdgeOutput) = secondEdgeEncoder.forward(posXTensor,
+      negXTensor,
+      secondEdgeSrcIndicesTensor,
+      secondEdgeDstIndicesTensor)
+    val (posLogits, negLogits) = firstEdgeEncoder.forward(secondPosEdgeOutput,
+      secondNegEdgeOutput,
+      firstEdgeSrcIndicesTensor,
+      firstEdgeDstIndicesTensor)
+
     0f
   }
 }
@@ -27,4 +52,15 @@ object DGIModel {
   def apply(inputDim: Int,
             hiddenDim: Int,
             outputDim: Int): DGIModel = new DGIModel(inputDim, hiddenDim, outputDim)
+
+  def calcIndices(edgeIndex: Array[Long]): (Array[Int], Array[Int]) = {
+    val size = edgeIndex.length / 2
+    val srcIndices = Array.ofDim[Int](size)
+    val dstIndices = Array.ofDim[Int](size)
+    for (i <- 0 until size) {
+      srcIndices(i) = edgeIndex(i).toInt
+      dstIndices(i) = edgeIndex(size + i).toInt
+    }
+    (srcIndices, dstIndices)
+  }
 }
