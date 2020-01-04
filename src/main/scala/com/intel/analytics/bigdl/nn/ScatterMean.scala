@@ -42,6 +42,8 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
 
       require(srcIndex < batchSize,
         s"index should smaller than $batchSize, but got $srcIndex")
+      outputPosTensor.select(1, srcIndex + 1).add(posTensor.select(1, dstIndex + 1))
+      outputNegTensor.select(1, srcIndex + 1).add(negTensor.select(1, dstIndex + 1))
       i += 1
     }
 
@@ -53,6 +55,9 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     val negTensor = input[Tensor[T]](2)
     val srcIndexTensor = input[Tensor[Int]](3)
     val dstIndexTensor = input[Tensor[Int]](4)
+
+    val gradPosOutput = gradOutput[Tensor[T]](1)
+    val gradNegOutput = gradOutput[Tensor[T]](2)
 
     val gradPosTensor = gradInput[Tensor[T]](1)
     gradPosTensor.resizeAs(posTensor)
@@ -75,6 +80,8 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
 
       require(srcIndex < batchSize,
         s"index should smaller than $batchSize, but got $srcIndex")
+      gradPosTensor.select(1, dstIndex + 1).copy(gradPosOutput.select(1, srcIndex + 1))
+      gradNegTensor.select(1, dstIndex + 1).copy(gradNegOutput.select(1, srcIndex + 1))
       i += 1
     }
 

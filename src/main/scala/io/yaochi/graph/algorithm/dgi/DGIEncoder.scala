@@ -15,7 +15,8 @@ class DGIEncoder(inputDim: Int,
     null
   }
 
-  def backward(x: Tensor[Float],
+  def backward(posX: Tensor[Float],
+               negX: Tensor[Float],
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
                gradOutput: Tensor[Float]): Tensor[Float] = {
