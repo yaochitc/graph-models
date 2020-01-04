@@ -14,8 +14,9 @@ class GCNEncoder(batchSize: Int,
   private val linearLayer = buildLinearLayer()
   private val linearModule = buildLinearModule()
 
-  private val convLayer = buildConvModule()
-  private val biasLayer = buildBiasModule()
+  private val convLayer = buildConvLayer()
+  private val biasLayer = buildBiasLayer()
+  private val convModule = buildConvModule()
 
   def forward(x: Tensor[Float],
               srcIndices: Tensor[Int],
@@ -23,9 +24,8 @@ class GCNEncoder(batchSize: Int,
               norms: Tensor[Float]): Tensor[Float] = {
     val linearOutput = linearModule.forward(x)
       .toTensor[Float]
-    val convOutput = convLayer.forward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)))
+    convModule.forward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)))
       .toTensor[Float]
-    biasLayer.forward(convOutput)
   }
 
   def backward(x: Tensor[Float],
@@ -33,10 +33,8 @@ class GCNEncoder(batchSize: Int,
                dstIndices: Tensor[Int],
                norms: Tensor[Float],
                gradOutput: Tensor[Float]): Tensor[Float] = {
-    val convOutput = convLayer.output.toTensor[Float]
-    val biasGradOutput = biasLayer.backward(convOutput, gradOutput)
     val linearOutput = linearModule.output.toTensor[Float]
-    val gradTable = convLayer.backward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)), biasGradOutput).toTable
+    val gradTable = convModule.backward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)), gradOutput).toTable
 
     val gradTensor = linearModule.backward(x, gradTable[Tensor[Float]](1)).toTensor[Float]
 
@@ -73,12 +71,18 @@ class GCNEncoder(batchSize: Int,
     module.add(linearLayer)
   }
 
-  private def buildConvModule(): Scatter[Float] = {
+  private def buildConvLayer(): Scatter[Float] = {
     new Scatter[Float](batchSize, outputDim)
   }
 
-  private def buildBiasModule(): CAdd[Float] = {
+  private def buildBiasLayer(): CAdd[Float] = {
     LayerUtil.buildBias(outputDim, weights, start + inputDim * outputDim)
+  }
+
+  private def buildConvModule(): Sequential[Float] = {
+    Sequential[Float]()
+      .add(convLayer)
+      .add(biasLayer)
   }
 
   def getParameterSize: Int = inputDim * outputDim + outputDim

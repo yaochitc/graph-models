@@ -6,7 +6,7 @@ class DGIModel(inputDim: Int,
                hiddenDim: Int) extends GNNModel {
 
   def getParameterSize: Int = {
-    inputDim * hiddenDim + hiddenDim
+    0
   }
 
   def backward(batchSize: Int,
