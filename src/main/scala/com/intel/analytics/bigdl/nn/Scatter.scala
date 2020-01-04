@@ -78,7 +78,7 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
 
       require(srcIndex < batchSize,
         s"index should smaller than $batchSize, but got $srcIndex")
-      gradTensor.select(1, srcIndex + 1).copy(gradOutput.select(1, dstIndex + 1).mul(weight))
+      gradTensor.select(1, dstIndex + 1).copy(gradOutput.select(1, srcIndex + 1).mul(weight))
       i += 1
     }
 

@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.gcn
 
-import com.intel.analytics.bigdl.nn.{SoftMax, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.nn.{CrossEntropyCriterion, LogSoftMax, SoftMax, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.tensor.Tensor
 import io.yaochi.graph.algorithm.base.GNNModel
 
@@ -42,10 +42,12 @@ class GCNModel(inputDim: Int,
       secondEdgeDstIndicesTensor, secondEdgeNormsTensor)
 
     val firstEdgeEncoder = GCNEncoder(numFirstOrderNodes, hiddenDim, numClasses, weights, offset)
-    val output = firstEdgeEncoder.forward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
+    val logits = firstEdgeEncoder.forward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor, firstEdgeNormsTensor)
 
-    null
+    val outputTensor = GCNModel.softmax.forward(logits).max(2)._2
+    (0 until outputTensor.nElement()).map(i => outputTensor.valueAt(i + 1, 1) - 1)
+      .toArray
   }
 
   def backward(batchSize: Int,
@@ -76,17 +78,27 @@ class GCNModel(inputDim: Int,
       secondEdgeDstIndicesTensor, secondEdgeNormsTensor)
 
     val firstEdgeEncoder = GCNEncoder(numFirstOrderNodes, hiddenDim, numClasses, weights, offset)
-    val output = firstEdgeEncoder.forward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
+    val logits = firstEdgeEncoder.forward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor, firstEdgeNormsTensor)
 
-    0f
+    val targetTensor = Tensor.apply(targets.map(target => (target + 1).toFloat), Array(targets.length))
+
+    val loss = GCNModel.criterion.forward(logits, targetTensor)
+    val gradTensor = GCNModel.criterion.backward(logits, targetTensor)
+
+    val firstEdgeGradTensor = firstEdgeEncoder.backward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
+      firstEdgeDstIndicesTensor, firstEdgeNormsTensor, gradTensor)
+
+    secondEdgeEncoder.backward(xTensor, secondEdgeSrcIndicesTensor,
+      secondEdgeDstIndicesTensor, secondEdgeNormsTensor, firstEdgeGradTensor)
+    loss
   }
 }
 
 object GCNModel {
-  val criterion = SoftmaxWithCriterion[Float]()
+  val criterion = CrossEntropyCriterion[Float]()
 
-  val softmax = SoftMax[Float]()
+  val softmax = LogSoftMax[Float]()
 
   def apply(inputDim: Int,
             hiddenDim: Int,

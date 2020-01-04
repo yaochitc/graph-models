@@ -31,7 +31,10 @@ class GCNEncoder(batchSize: Int,
                dstIndices: Tensor[Int],
                norms: Tensor[Float],
                gradOutput: Tensor[Float]): Tensor[Float] = {
-    val gradTensor = linearModule.backward(x, gradOutput).toTensor[Float]
+    val linearOutput = linearModule.output.toTensor[Float]
+    val gradTable = convLayer.backward(T.array(Array(linearOutput, norms, srcIndices, dstIndices)), gradOutput).toTable
+
+    val gradTensor = linearModule.backward(x, gradTable[Tensor[Float]](1)).toTensor[Float]
 
     val gradWeight = linearLayer.gradWeight
     val gradBias = linearLayer.gradBias
