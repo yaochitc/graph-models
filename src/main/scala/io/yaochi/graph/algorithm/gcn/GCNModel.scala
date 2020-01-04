@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.gcn
 
-import com.intel.analytics.bigdl.nn.{CrossEntropyCriterion, LogSoftMax, SoftMax, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.nn.{CrossEntropyCriterion, LogSoftMax}
 import com.intel.analytics.bigdl.tensor.Tensor
 import io.yaochi.graph.algorithm.base.GNNModel
 

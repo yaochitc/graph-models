@@ -15,29 +15,10 @@ import com.tencent.angel.spark.models.{PSMatrix, PSVector}
 import com.tencent.angel.spark.util.VectorUtils
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap
 
-abstract class GNNPSModel(val graph: PSMatrix,
-                          val labels: PSVector = null) extends Serializable {
-
-  val dim: Long = labels.dimension
+abstract class GNNPSModel(val graph: PSMatrix) extends Serializable {
 
   def initialize(): Unit = {
   }
-
-  // the default pull method will return keys even those not exists on servers
-  def readLabels(keys: Array[Long]): LongFloatVector =
-    labels.pull(keys.clone()).asInstanceOf[LongFloatVector]
-
-  // this method will not return keys that do not exist on servers
-  def readLabels2(keys: Array[Long]): LongFloatVector = {
-    val func = new GetLabels(labels.poolId, keys.clone())
-    labels.psfGet(func).asInstanceOf[GetLabelsResult].getVector
-  }
-
-  def setLabels(value: LongFloatVector): Unit =
-    labels.update(value)
-
-  def nnzLabels(): Long =
-    VectorUtils.size(labels)
 
   /* summary functions */
   def nnzNodes(): Long = {

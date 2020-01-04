@@ -5,7 +5,7 @@ import com.tencent.angel.ml.math2.vector.LongFloatVector
 
 class NodeLabelPartition(val index: Int,
                          val labels: LongFloatVector) extends Serializable {
-  def init(model: GNNPSModel): Unit =
+  def init(model: SupervisedGNNPSModel): Unit =
     model.setLabels(labels)
 }
 

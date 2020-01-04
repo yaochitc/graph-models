@@ -37,7 +37,7 @@ class DGITest {
     dgi.setStorageLevel("MEMORY_ONLY")
 
     val (edges, features, labels) = CoraDataset.load("data/cora")
-    val (model, psModel, graph) = dgi.initialize(edges, features, None)
+    val (model, psModel, graph) = dgi.initialize(edges, features)
     dgi.fit(model, psModel, graph)
 
   }

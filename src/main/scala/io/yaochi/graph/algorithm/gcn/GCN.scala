@@ -1,13 +1,13 @@
 package io.yaochi.graph.algorithm.gcn
 
-import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
+import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition, SupervisedGNN}
 import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
-class GCN extends GNN[GCNPSModel, GCNModel]
+class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
   with HasHiddenDim with HasNumClasses
   with HasTestRatio {
 

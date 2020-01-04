@@ -12,13 +12,13 @@ import com.tencent.angel.psagent.PSAgentContext
 import com.tencent.angel.spark.ml.util.LoadBalancePartitioner
 import com.tencent.angel.spark.models.impl.{PSMatrixImpl, PSVectorImpl}
 import com.tencent.angel.spark.models.{PSMatrix, PSVector}
-import io.yaochi.graph.algorithm.base.GNNPSModel
+import io.yaochi.graph.algorithm.base.SupervisedGNNPSModel
 import io.yaochi.graph.optim.AsyncOptim
 import org.apache.spark.rdd.RDD
 
 class GCNPSModel(graph: PSMatrix,
                  labels: PSVector,
-                 val weights: PSVector) extends GNNPSModel(graph, labels) {
+                 val weights: PSVector) extends SupervisedGNNPSModel(graph, labels) {
 
   override def initialize(): Unit = {
     weights.psfUpdate(new XavierUniform(weights.poolId, 0, 1, 1.0, 1, weights.dimension)).get()
