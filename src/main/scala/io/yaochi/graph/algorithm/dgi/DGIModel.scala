@@ -5,6 +5,10 @@ import io.yaochi.graph.algorithm.base.GNNModel
 class DGIModel(inputDim: Int,
                hiddenDim: Int) extends GNNModel {
 
+  def getParameterSize: Int = {
+    inputDim * hiddenDim + hiddenDim
+  }
+
   def backward(batchSize: Int,
                posX: Array[Float],
                negX: Array[Float],

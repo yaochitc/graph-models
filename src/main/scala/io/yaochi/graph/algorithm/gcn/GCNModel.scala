@@ -14,7 +14,6 @@ class GCNModel(inputDim: Int,
     conv1ParamSize + conv2ParamSize
   }
 
-
   def forward(batchSize: Int,
               x: Array[Float],
               firstEdgeIndex: Array[Long],
@@ -96,9 +95,9 @@ class GCNModel(inputDim: Int,
 }
 
 object GCNModel {
-  val criterion = CrossEntropyCriterion[Float]()
+  private val criterion = CrossEntropyCriterion[Float]()
 
-  val softmax = LogSoftMax[Float]()
+  private val softmax = LogSoftMax[Float]()
 
   def apply(inputDim: Int,
             hiddenDim: Int,
