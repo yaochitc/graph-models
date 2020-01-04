@@ -36,7 +36,7 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
 
     output.resize(batchSize, nOutput).zero()
     var i = 0
-    while (i < weightTensor.nElement()) {
+    while (i < srcIndexTensor.nElement()) {
       val srcIndex = srcIndexBuffer.valueAt(i + 1)
       val dstIndex = dstIndexBuffer.valueAt(i + 1)
       val weight = weightBuffer.valueAt(srcIndex + 1)
@@ -72,7 +72,7 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
       Array(dstIndexTensor.nElement()))
 
     var i = 0
-    while (i < weightTensor.nElement()) {
+    while (i < srcIndexTensor.nElement()) {
       val srcIndex = srcIndexBuffer.valueAt(i + 1)
       val dstIndex = dstIndexBuffer.valueAt(i + 1)
       val weight = weightBuffer.valueAt(srcIndex + 1)

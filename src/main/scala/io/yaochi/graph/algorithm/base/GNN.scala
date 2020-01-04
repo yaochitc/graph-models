@@ -75,6 +75,7 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
     val model = makeModel()
 
     val psModel = makePSModel(minId, maxId + 1, index, model)
+    psModel.initialize()
 
     labelDF.foreach(f => initLabels(psModel, f, minId, maxId))
     initFeatures(psModel, featureDF, minId, maxId)

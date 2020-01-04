@@ -5,6 +5,7 @@ import java.util.{ArrayList => JArrayList}
 import com.tencent.angel.graph.data.Node
 import com.tencent.angel.ml.math2.VFactory
 import com.tencent.angel.ml.math2.vector.IntFloatVector
+import com.tencent.angel.ml.matrix.psf.update.XavierUniform
 import com.tencent.angel.ml.matrix.{MatrixContext, RowType}
 import com.tencent.angel.ps.storage.partitioner.ColumnRangePartitioner
 import com.tencent.angel.psagent.PSAgentContext
@@ -18,6 +19,10 @@ import org.apache.spark.rdd.RDD
 class GCNPSModel(graph: PSMatrix,
                  labels: PSVector,
                  val weights: PSVector) extends GNNPSModel(graph, labels) {
+
+  override def initialize(): Unit = {
+    weights.psfUpdate(new XavierUniform(weights.poolId, 0, 1, 1.0, 1, weights.dimension)).get()
+  }
 
   def readWeights(): Array[Float] =
     weights.pull().asInstanceOf[IntFloatVector].getStorage.getValues

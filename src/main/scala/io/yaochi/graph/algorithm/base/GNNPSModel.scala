@@ -20,6 +20,9 @@ abstract class GNNPSModel(val graph: PSMatrix,
 
   val dim: Long = labels.dimension
 
+  def initialize(): Unit = {
+  }
+
   // the default pull method will return keys even those not exists on servers
   def readLabels(keys: Array[Long]): LongFloatVector =
     labels.pull(keys.clone()).asInstanceOf[LongFloatVector]

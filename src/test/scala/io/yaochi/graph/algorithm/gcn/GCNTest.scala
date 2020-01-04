@@ -37,6 +37,7 @@ class GCNTest {
     gcn.setStorageLevel("MEMORY_ONLY")
     gcn.setTestRatio(0.5f)
 
+
     val (edges, features, labels) = CoraDataset.load("data/cora")
     val (model, psModel, graph) = gcn.initialize(edges, features, Option(labels))
     gcn.fit(model, psModel, graph)
