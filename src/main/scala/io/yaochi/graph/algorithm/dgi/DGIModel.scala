@@ -8,9 +8,10 @@ class DGIModel(inputDim: Int,
                outputDim: Int) extends GNNModel {
 
   def getParameterSize: Int = {
-    val conv1ParamSize = 2 * inputDim * hiddenDim + hiddenDim
-    val conv2ParamSize = 2 * hiddenDim * outputDim + outputDim
-    conv1ParamSize + conv2ParamSize
+    val conv1ParamSize = 2 * inputDim * hiddenDim + 2 * hiddenDim
+    val conv2ParamSize = 2 * hiddenDim * outputDim + 2 * outputDim
+    val discriminatorParamSize = outputDim * outputDim
+    conv1ParamSize + conv2ParamSize + discriminatorParamSize
   }
 
   def backward(batchSize: Int,
@@ -47,7 +48,7 @@ class DGIModel(inputDim: Int,
       firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor)
 
-    discriminator.forward(logitsTable[Tensor[Float]](1),
+    val outputTable = discriminator.forward(logitsTable[Tensor[Float]](1),
       logitsTable[Tensor[Float]](2))
     0f
   }

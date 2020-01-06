@@ -31,7 +31,7 @@ class DGIDiscriminator(inputDim: Int,
 
   private def buildSummaryModule(): Sequential[Float] = {
     Sequential[Float]()
-      .add(Mean())
+      .add(Mean(squeeze = false))
       .add(linearLayer)
       .add(Sigmoid())
   }
