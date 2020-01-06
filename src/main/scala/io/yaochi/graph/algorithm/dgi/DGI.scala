@@ -1,17 +1,17 @@
 package io.yaochi.graph.algorithm.dgi
 
 import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
-import io.yaochi.graph.params.{HasHiddenDim, HasInputDim, HasOutputDim, HasUseSecondOrder}
+import io.yaochi.graph.params.{HasHiddenDim, HasOutputDim, HasUseSecondOrder}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 class DGI extends GNN[DGIPSModel, DGIModel]
-  with HasInputDim with HasHiddenDim
+  with HasHiddenDim
   with HasOutputDim with HasUseSecondOrder {
 
-  override def makeModel(): DGIModel = DGIModel($(inputDim), $(hiddenDim), $(outputDim))
+  override def makeModel(): DGIModel = DGIModel($(featureDim), $(hiddenDim), $(outputDim))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: DGIModel): DGIPSModel = {
     DGIPSModel.apply(minId, maxId + 1, model.getParameterSize, getOptimizer,

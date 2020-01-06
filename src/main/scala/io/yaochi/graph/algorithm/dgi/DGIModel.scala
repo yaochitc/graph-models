@@ -31,7 +31,8 @@ class DGIModel(inputDim: Int,
     val secondEdgeSrcIndicesTensor = Tensor.apply(secondEdgeSrcIndices, Array(secondEdgeSrcIndices.length))
     val secondEdgeDstIndicesTensor = Tensor.apply(secondEdgeDstIndices, Array(secondEdgeDstIndices.length))
 
-    val secondEdgeEncoder = DGIEncoder(batchSize, inputDim, hiddenDim, weights, reshape = true)
+    val numSecondOrderNodes = posX.length / inputDim
+    val secondEdgeEncoder = DGIEncoder(numSecondOrderNodes, inputDim, hiddenDim, weights, reshape = true)
     val offset = secondEdgeEncoder.getParameterSize
     val firstEdgeEncoder = DGIEncoder(batchSize, hiddenDim, outputDim, weights, offset)
 

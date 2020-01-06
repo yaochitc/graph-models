@@ -12,8 +12,11 @@ class DGIEncoder(batchSize: Int,
                  start: Int = 0,
                  reshape: Boolean = false) {
 
-  private val posConvModule = buildConvModule()
-  private val negConvModule = buildConvModule()
+  private var posReshapeLayer: Reshape[Float] = buildReshapeLayer()
+  private var negReshapeLayer: Reshape[Float] = buildReshapeLayer()
+
+  private val posConvLayer = buildConvLayer()
+  private val negConvLayer = buildConvLayer()
 
   private val linearLayer = buildLinearLayer()
   private val preluLayer = buildPReluLayer()
@@ -24,13 +27,18 @@ class DGIEncoder(batchSize: Int,
               negX: Tensor[Float],
               srcIndices: Tensor[Int],
               dstIndices: Tensor[Int]): Table = {
-    val posConvOutput = posConvModule.forward(T.apply(Array(posX, srcIndices, dstIndices)))
-    val negConvOutput = negConvModule.forward(T.apply(Array(negX, srcIndices, dstIndices)))
+    val (posInput, negInput) = if (reshape) {
+      (posReshapeLayer.forward(posX), negReshapeLayer.forward(negX))
+    } else {
+      (posX, negX)
+    }
+    val posConvOutput = posConvLayer.forward(T.apply(posInput, srcIndices, dstIndices))
+    val negConvOutput = negConvLayer.forward(T.apply(negInput, srcIndices, dstIndices))
 
-    T.apply(Array(
-      posLinearModule.forward(T.apply(Array(posConvOutput, posX))),
-      negLinearModule.forward(T.apply(Array(posConvOutput, posX)))
-    ))
+    T.apply(
+      posLinearModule.forward(T.apply(posConvOutput, posInput)),
+      negLinearModule.forward(T.apply(negConvOutput, negInput))
+    )
   }
 
   def backward(posX: Tensor[Float],
@@ -38,22 +46,25 @@ class DGIEncoder(batchSize: Int,
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
                gradOutput: Table): Table = {
-    val posLinearGradTable = posLinearModule.backward(T.apply(Array(posConvModule.output, posX)),
+    val posLinearGradTable = posLinearModule.backward(T.apply(Array(posConvLayer.output, posX)),
       gradOutput[Tensor[Float]](1))
-    val negLinearGradTable = negLinearModule.backward(T.apply(Array(negLinearModule.output, negX)),
+    val negLinearGradTable = negLinearModule.backward(T.apply(Array(negConvLayer.output, negX)),
       gradOutput[Tensor[Float]](2))
-
 
 
     null
   }
 
-  private def buildConvModule(): Sequential[Float] = {
-    var module = Sequential[Float]()
+  private def buildReshapeLayer():  Reshape[Float] = {
     if (reshape) {
-      module = module.add(Reshape(Array(batchSize, inputDim)))
+      Reshape(Array(batchSize, inputDim))
+    } else {
+      null
     }
-    module.add(new ScatterMean[Float](batchSize, inputDim))
+  }
+
+  private def buildConvLayer(): ScatterMean[Float] = {
+    new ScatterMean[Float](batchSize, inputDim)
   }
 
   private def buildLinearLayer(): Linear[Float] = {
