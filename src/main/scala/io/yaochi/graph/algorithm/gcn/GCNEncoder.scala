@@ -11,11 +11,11 @@ class GCNEncoder(batchSize: Int,
                  weights: Array[Float],
                  start: Int = 0,
                  reshape: Boolean = false) {
-  private val linearLayer = buildLinearLayer()
+  private val linearLayer = LayerUtil.buildLinear(inputDim, outputDim, weights, false, start)
   private val linearModule = buildLinearModule()
 
-  private val convLayer = buildConvLayer()
-  private val biasLayer = buildBiasLayer()
+  private val convLayer = new Scatter[Float](batchSize, outputDim)
+  private val biasLayer = LayerUtil.buildBiasLayer(outputDim, weights, start + inputDim * outputDim)
   private val convModule = buildConvModule()
 
   def forward(x: Tensor[Float],
@@ -54,13 +54,8 @@ class GCNEncoder(batchSize: Int,
     for (i <- 0 until outputSize) {
       weights(curOffset + i) = gradBias.valueAt(i + 1)
     }
-    curOffset += outputSize
 
     gradTensor
-  }
-
-  private def buildLinearLayer(): Linear[Float] = {
-    LayerUtil.buildLinear(inputDim, outputDim, weights, false, start)
   }
 
   private def buildLinearModule(): Sequential[Float] = {
@@ -69,14 +64,6 @@ class GCNEncoder(batchSize: Int,
       module = module.add(Reshape(Array(batchSize, inputDim)))
     }
     module.add(linearLayer)
-  }
-
-  private def buildConvLayer(): Scatter[Float] = {
-    new Scatter[Float](batchSize, outputDim)
-  }
-
-  private def buildBiasLayer(): CAdd[Float] = {
-    LayerUtil.buildBiasLayer(outputDim, weights, start + inputDim * outputDim)
   }
 
   private def buildConvModule(): Sequential[Float] = {

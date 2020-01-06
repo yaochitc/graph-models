@@ -18,15 +18,42 @@ class DGIDiscriminator(inputDim: Int,
               negZ: Tensor[Float]): Table = {
     val summary = summaryModule.forward(posZ)
 
-    T.apply(Array(
+    T.apply(
       posMultiplyModule.forward(T.apply(posZ, summary)),
       negMultiplyModule.forward(T.apply(negZ, summary))
-    ))
+    )
   }
 
   def backward(posZ: Tensor[Float],
-               negZ: Tensor[Float]): Table = {
-    null
+               negZ: Tensor[Float],
+               gradOutput: Table): Table = {
+    val summary = summaryModule.output.toTensor[Float]
+    val posMultiplyGradTable = posMultiplyModule.backward(T.apply(posZ, summary),
+      gradOutput[Tensor[Float]](1)
+    ).toTable
+    val negMultiplyGradTable = negMultiplyModule.backward(T.apply(negZ, summary),
+      gradOutput[Tensor[Float]](2)
+    ).toTable
+
+    val negGradTensor = negMultiplyGradTable[Tensor[Float]](1)
+    val posGradTensor = posMultiplyGradTable[Tensor[Float]](1).add(
+      summaryModule.backward(posZ, negMultiplyGradTable[Tensor[Float]](2)).toTensor[Float]
+    ).add(
+      summaryModule.backward(posZ, posMultiplyGradTable[Tensor[Float]](2)).toTensor[Float]
+    )
+
+    val gradWeight = linearLayer.gradWeight
+
+    val gradWeightSize = gradWeight.size()
+    val outputSize = gradWeightSize(0)
+    val inputSize = gradWeightSize(1)
+
+    var curOffset = start
+    for (i <- 0 until outputSize; j <- 0 until inputSize) {
+      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
+    }
+
+    T.apply(posGradTensor, negGradTensor)
   }
 
   private def buildSummaryModule(): Sequential[Float] = {

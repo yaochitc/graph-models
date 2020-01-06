@@ -46,13 +46,60 @@ class DGIEncoder(batchSize: Int,
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
                gradOutput: Table): Table = {
-    val posLinearGradTable = posLinearModule.backward(T.apply(Array(posConvLayer.output, posX)),
-      gradOutput[Tensor[Float]](1))
-    val negLinearGradTable = negLinearModule.backward(T.apply(Array(negConvLayer.output, negX)),
-      gradOutput[Tensor[Float]](2))
+    val posLinearGradTable = posLinearModule.backward(T.apply(posConvLayer.output, posX),
+      gradOutput[Tensor[Float]](1)).toTable
+    val negLinearGradTable = negLinearModule.backward(T.apply(negConvLayer.output, negX),
+      gradOutput[Tensor[Float]](2)).toTable
 
+    val (posInput, negInput) = if (reshape) {
+      (posReshapeLayer.output, negReshapeLayer.output)
+    } else {
+      (posX, negX)
+    }
 
-    null
+    val posConvGradTable = posConvLayer.backward(T.apply(posInput, srcIndices, dstIndices),
+      posLinearGradTable[Tensor[Float]](1)).toTable
+    val negConvGradTable = negConvLayer.backward(T.apply(negInput, srcIndices, dstIndices),
+      negLinearGradTable[Tensor[Float]](1)).toTable
+
+    val posInputGrad = posLinearGradTable[Tensor[Float]](2).add(
+      posConvGradTable[Tensor[Float]](1)
+    )
+    val negInputGrad = negLinearGradTable[Tensor[Float]](2).add(
+      negConvGradTable[Tensor[Float]](1)
+    )
+
+    val gradWeight = linearLayer.gradWeight
+    val gradBias = linearLayer.gradBias
+
+    val gradWeightSize = gradWeight.size()
+    val outputSize = gradWeightSize(0)
+    val inputSize = gradWeightSize(1)
+
+    var curOffset = start
+    for (i <- 0 until outputSize; j <- 0 until inputSize) {
+      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
+    }
+    curOffset += outputSize * inputSize
+
+    for (i <- 0 until outputSize) {
+      weights(curOffset + i) = gradBias.valueAt(i + 1)
+    }
+    curOffset += outputSize
+
+    val preluGradWeight = preluLayer.gradWeight
+    for (i <- 0 until outputSize) {
+      weights(curOffset + i) = preluGradWeight.valueAt(i + 1)
+    }
+
+    if (reshape) {
+      T.apply(
+        posReshapeLayer.backward(posX, posInputGrad),
+        negReshapeLayer.backward(negX, negInputGrad)
+      )
+    } else {
+      T.apply(posInputGrad, negInputGrad)
+    }
   }
 
   private def buildReshapeLayer(): Reshape[Float] = {

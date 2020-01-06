@@ -1,6 +1,7 @@
 package io.yaochi.graph.algorithm.dgi
 
 import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.utils.T
 import io.yaochi.graph.algorithm.base.GNNModel
 
 class DGIModel(inputDim: Int,
@@ -50,7 +51,31 @@ class DGIModel(inputDim: Int,
 
     val outputTable = discriminator.forward(logitsTable[Tensor[Float]](1),
       logitsTable[Tensor[Float]](2))
-    0f
+    val (posOutputTensor, negOutputTensor) = (outputTable[Tensor[Float]](1), outputTable[Tensor[Float]](2))
+
+    val loss = posOutputTensor.add(1e-15f).log().mul(-1.0f / batchSize).sum() +
+      negOutputTensor.mul(-1f).add(1 + 1e-15f).log().mul(-1.0f / batchSize).sum()
+    val gradTensorTable = T.apply(
+      Tensor[Float]().resizeAs(posOutputTensor)
+        .fill(-1.0f / batchSize)
+        .cdiv(posOutputTensor.add(1e-15f)),
+      Tensor[Float]().resizeAs(negOutputTensor)
+        .fill(1.0f / batchSize)
+        .cdiv(negOutputTensor.mul(-1).add(1 + 1e-15f))
+    )
+
+    val discriminatorGradTable = discriminator.backward(logitsTable[Tensor[Float]](1),
+      logitsTable[Tensor[Float]](2),
+      gradTensorTable
+    )
+
+    firstEdgeEncoder.backward(secondEdgeOutputTable[Tensor[Float]](1),
+      secondEdgeOutputTable[Tensor[Float]](2),
+      firstEdgeSrcIndicesTensor,
+      firstEdgeDstIndicesTensor,
+      discriminatorGradTable)
+
+    loss
   }
 }
 
