@@ -26,15 +26,19 @@ class DGIModel(inputDim: Int,
     val posXTensor = Tensor.apply(posX, Array(posX.length))
     val negXTensor = Tensor.apply(negX, Array(negX.length))
 
+    val firstEdgeCounts = DGIModel.calcCounts(firstEdgeIndex, batchSize)
     val (firstEdgeSrcIndices, firstEdgeDstIndices) = DGIModel.calcIndices(firstEdgeIndex)
     val firstEdgeSrcIndicesTensor = Tensor.apply(firstEdgeSrcIndices, Array(firstEdgeSrcIndices.length))
     val firstEdgeDstIndicesTensor = Tensor.apply(firstEdgeDstIndices, Array(firstEdgeDstIndices.length))
+    val firstEdgeCountsTensor = Tensor.apply(firstEdgeCounts, Array(firstEdgeCounts.length))
 
+    val numSecondOrderNodes = posX.length / inputDim
+    val secondEdgeCounts = DGIModel.calcCounts(secondEdgeIndex, numSecondOrderNodes)
     val (secondEdgeSrcIndices, secondEdgeDstIndices) = DGIModel.calcIndices(secondEdgeIndex)
     val secondEdgeSrcIndicesTensor = Tensor.apply(secondEdgeSrcIndices, Array(secondEdgeSrcIndices.length))
     val secondEdgeDstIndicesTensor = Tensor.apply(secondEdgeDstIndices, Array(secondEdgeDstIndices.length))
+    val secondEdgeCountsTensor = Tensor.apply(secondEdgeCounts, Array(secondEdgeCounts.length))
 
-    val numSecondOrderNodes = posX.length / inputDim
     val secondEdgeEncoder = DGIEncoder(numSecondOrderNodes, inputDim, hiddenDim, weights, reshape = true)
     var offset = secondEdgeEncoder.getParameterSize
     val firstEdgeEncoder = DGIEncoder(batchSize, hiddenDim, outputDim, weights, offset)
@@ -44,11 +48,13 @@ class DGIModel(inputDim: Int,
     val secondEdgeOutputTable = secondEdgeEncoder.forward(posXTensor,
       negXTensor,
       secondEdgeSrcIndicesTensor,
-      secondEdgeDstIndicesTensor)
+      secondEdgeDstIndicesTensor,
+      secondEdgeCountsTensor)
     val logitsTable = firstEdgeEncoder.forward(secondEdgeOutputTable[Tensor[Float]](1),
       secondEdgeOutputTable[Tensor[Float]](2),
       firstEdgeSrcIndicesTensor,
-      firstEdgeDstIndicesTensor)
+      firstEdgeDstIndicesTensor,
+      firstEdgeCountsTensor)
 
     val outputTable = discriminator.forward(logitsTable[Tensor[Float]](1),
       logitsTable[Tensor[Float]](2))
@@ -74,12 +80,14 @@ class DGIModel(inputDim: Int,
       secondEdgeOutputTable[Tensor[Float]](2),
       firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor,
+      firstEdgeCountsTensor,
       discriminatorGradTable)
 
     secondEdgeEncoder.backward(posXTensor,
       negXTensor,
       secondEdgeSrcIndicesTensor,
       secondEdgeDstIndicesTensor,
+      secondEdgeCountsTensor,
       firstEdgeGradTable)
 
     loss
@@ -90,6 +98,17 @@ object DGIModel {
   def apply(inputDim: Int,
             hiddenDim: Int,
             outputDim: Int): DGIModel = new DGIModel(inputDim, hiddenDim, outputDim)
+
+  def calcCounts(edgeIndex: Array[Long], numNodes: Int): Array[Float] = {
+    val size = edgeIndex.length / 2
+    val counts = Array.ofDim[Float](numNodes)
+    for (i <- 0 until size) {
+      val src = edgeIndex(i).toInt
+      counts(src) += 1
+    }
+
+    counts
+  }
 
   def calcIndices(edgeIndex: Array[Long]): (Array[Int], Array[Int]) = {
     val size = edgeIndex.length / 2

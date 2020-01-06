@@ -12,6 +12,7 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
   output = Tensor[T]()
   gradInput = T.array(Array(Tensor[T]()))
 
+  private val countBuffer: Tensor[T] = Tensor[T]()
   private val srcIndexBuffer: Tensor[Int] = Tensor[Int]()
   private val dstIndexBuffer: Tensor[Int] = Tensor[Int]()
 
@@ -19,6 +20,7 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     val inputTensor = input[Tensor[T]](1)
     val srcIndexTensor = input[Tensor[Int]](2)
     val dstIndexTensor = input[Tensor[Int]](3)
+    val countTensor = input[Tensor[T]](4)
 
     srcIndexBuffer.set(srcIndexTensor.storage(),
       srcIndexTensor.storageOffset(),
@@ -28,15 +30,20 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
       dstIndexTensor.storageOffset(),
       Array(dstIndexTensor.nElement()))
 
+    countBuffer.set(countTensor.storage(),
+      countTensor.storageOffset(),
+      Array(countTensor.nElement()))
+
     output.resize(batchSize, nOutput).zero()
     var i = 0
     while (i < srcIndexTensor.nElement()) {
       val srcIndex = srcIndexBuffer.valueAt(i + 1)
       val dstIndex = dstIndexBuffer.valueAt(i + 1)
+      val count = countBuffer.valueAt(srcIndex + 1)
 
       require(srcIndex < batchSize,
         s"index should smaller than $batchSize, but got $srcIndex")
-      output.select(1, srcIndex + 1).add(inputTensor.select(1, dstIndex + 1))
+      output.select(1, srcIndex + 1).add(inputTensor.select(1, dstIndex + 1).div(count))
       i += 1
     }
 
@@ -47,6 +54,7 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     val inputTensor = input[Tensor[T]](1)
     val srcIndexTensor = input[Tensor[Int]](2)
     val dstIndexTensor = input[Tensor[Int]](3)
+    val countTensor = input[Tensor[T]](4)
 
     val gradTensor = gradInput[Tensor[T]](1)
     gradTensor.resizeAs(inputTensor)
@@ -55,10 +63,11 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     while (i < srcIndexTensor.nElement()) {
       val srcIndex = srcIndexBuffer.valueAt(i + 1)
       val dstIndex = dstIndexBuffer.valueAt(i + 1)
+      val count = countBuffer.valueAt(srcIndex + 1)
 
       require(srcIndex < batchSize,
         s"index should smaller than $batchSize, but got $srcIndex")
-      gradTensor.select(1, dstIndex + 1).copy(gradOutput.select(1, srcIndex + 1))
+      gradTensor.select(1, dstIndex + 1).copy(gradOutput.select(1, srcIndex + 1).div(count))
       i += 1
     }
 

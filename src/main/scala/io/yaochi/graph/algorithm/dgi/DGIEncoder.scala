@@ -26,14 +26,15 @@ class DGIEncoder(batchSize: Int,
   def forward(posX: Tensor[Float],
               negX: Tensor[Float],
               srcIndices: Tensor[Int],
-              dstIndices: Tensor[Int]): Table = {
+              dstIndices: Tensor[Int],
+              counts: Tensor[Float]): Table = {
     val (posInput, negInput) = if (reshape) {
       (posReshapeLayer.forward(posX), negReshapeLayer.forward(negX))
     } else {
       (posX, negX)
     }
-    val posConvOutput = posConvLayer.forward(T.apply(posInput, srcIndices, dstIndices))
-    val negConvOutput = negConvLayer.forward(T.apply(negInput, srcIndices, dstIndices))
+    val posConvOutput = posConvLayer.forward(T.apply(posInput, srcIndices, dstIndices, counts))
+    val negConvOutput = negConvLayer.forward(T.apply(negInput, srcIndices, dstIndices, counts))
 
     T.apply(
       posLinearModule.forward(T.apply(posConvOutput, posInput)),
@@ -45,6 +46,7 @@ class DGIEncoder(batchSize: Int,
                negX: Tensor[Float],
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
+               counts: Tensor[Float]
                gradOutput: Table): Table = {
     val (posInput, negInput) = if (reshape) {
       (posReshapeLayer.output, negReshapeLayer.output)
@@ -57,9 +59,9 @@ class DGIEncoder(batchSize: Int,
     val negLinearGradTable = negLinearModule.backward(T.apply(negConvLayer.output, negInput),
       gradOutput[Tensor[Float]](2)).toTable
 
-    val posConvGradTable = posConvLayer.backward(T.apply(posInput, srcIndices, dstIndices),
+    val posConvGradTable = posConvLayer.backward(T.apply(posInput, srcIndices, dstIndices, counts),
       posLinearGradTable[Tensor[Float]](1)).toTable
-    val negConvGradTable = negConvLayer.backward(T.apply(negInput, srcIndices, dstIndices),
+    val negConvGradTable = negConvLayer.backward(T.apply(negInput, srcIndices, dstIndices, counts),
       negLinearGradTable[Tensor[Float]](1)).toTable
 
     val posInputGrad = posLinearGradTable[Tensor[Float]](2).add(
