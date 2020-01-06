@@ -67,9 +67,9 @@ class DGIEncoder(batchSize: Int,
   private def buildLinearModule(): Sequential[Float] = {
     Sequential[Float]()
       .add(JoinTable(2, 2))
-      .add(linearLayer)
+      .add(LinearWrapper(linearLayer))
       .add(Normalize(2.0))
-      .add(preluLayer)
+      .add(PReluWrapper(preluLayer))
   }
 
   def getParameterSize: Int = 2 * inputDim * outputDim + 2 * outputDim
