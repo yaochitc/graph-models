@@ -1,5 +1,6 @@
 package io.yaochi.graph.algorithm.dgi
 
+import com.intel.analytics.bigdl.nn.BCECriterion
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.T
 import io.yaochi.graph.algorithm.base.GNNModel
@@ -53,15 +54,15 @@ class DGIModel(inputDim: Int,
       logitsTable[Tensor[Float]](2))
     val (posOutputTensor, negOutputTensor) = (outputTable[Tensor[Float]](1), outputTable[Tensor[Float]](2))
 
-    val loss = posOutputTensor.add(1e-15f).log().mul(-1.0f / batchSize).sum() +
-      negOutputTensor.mul(-1f).add(1 + 1e-15f).log().mul(-1.0f / batchSize).sum()
+    val criterion = BCECriterion[Float]()
+    val posTargetTensor = Tensor[Float]().resizeAs(posOutputTensor).fill(1f)
+    val negTargetTensor = Tensor[Float]().resizeAs(negOutputTensor).fill(0f)
+    val loss = criterion.forward(posOutputTensor, posTargetTensor) +
+      criterion.forward(negOutputTensor, negTargetTensor)
+
     val gradTensorTable = T.apply(
-      Tensor[Float]().resizeAs(posOutputTensor)
-        .fill(-1.0f / batchSize)
-        .cdiv(posOutputTensor.add(1e-15f)),
-      Tensor[Float]().resizeAs(negOutputTensor)
-        .fill(1.0f / batchSize)
-        .cdiv(negOutputTensor.mul(-1).add(1 + 1e-15f))
+      criterion.backward(posOutputTensor, posTargetTensor),
+      criterion.backward(negOutputTensor, negTargetTensor)
     )
 
     val discriminatorGradTable = discriminator.backward(logitsTable[Tensor[Float]](1),
@@ -69,11 +70,17 @@ class DGIModel(inputDim: Int,
       gradTensorTable
     )
 
-    firstEdgeEncoder.backward(secondEdgeOutputTable[Tensor[Float]](1),
+    val firstEdgeGradTable = firstEdgeEncoder.backward(secondEdgeOutputTable[Tensor[Float]](1),
       secondEdgeOutputTable[Tensor[Float]](2),
       firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor,
       discriminatorGradTable)
+
+    secondEdgeEncoder.backward(posXTensor,
+      negXTensor,
+      secondEdgeSrcIndicesTensor,
+      secondEdgeDstIndicesTensor,
+      firstEdgeGradTable)
 
     loss
   }

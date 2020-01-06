@@ -21,6 +21,10 @@ class PReluWrapper[T: ClassTag](labor: PReLU[T])
     gradInput.resizeAs(laborGradInput).copy(laborGradInput)
     gradInput
   }
+
+  override def accGradParameters(input: Tensor[T], gradOutput: Tensor[T]): Unit = {
+    labor.accGradParameters(input, gradOutput)
+  }
 }
 
 object PReluWrapper {

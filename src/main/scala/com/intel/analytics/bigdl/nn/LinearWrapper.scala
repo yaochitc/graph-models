@@ -21,6 +21,10 @@ class LinearWrapper[T: ClassTag](labor: Linear[T])
     gradInput.resizeAs(laborGradInput).copy(laborGradInput)
     gradInput
   }
+
+  override def accGradParameters(input: Tensor[T], gradOutput: Tensor[T]): Unit = {
+    labor.accGradParameters(input, gradOutput)
+  }
 }
 
 object LinearWrapper {

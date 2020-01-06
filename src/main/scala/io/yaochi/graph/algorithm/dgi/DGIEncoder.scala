@@ -46,16 +46,16 @@ class DGIEncoder(batchSize: Int,
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
                gradOutput: Table): Table = {
-    val posLinearGradTable = posLinearModule.backward(T.apply(posConvLayer.output, posX),
-      gradOutput[Tensor[Float]](1)).toTable
-    val negLinearGradTable = negLinearModule.backward(T.apply(negConvLayer.output, negX),
-      gradOutput[Tensor[Float]](2)).toTable
-
     val (posInput, negInput) = if (reshape) {
       (posReshapeLayer.output, negReshapeLayer.output)
     } else {
       (posX, negX)
     }
+
+    val posLinearGradTable = posLinearModule.backward(T.apply(posConvLayer.output, posInput),
+      gradOutput[Tensor[Float]](1)).toTable
+    val negLinearGradTable = negLinearModule.backward(T.apply(negConvLayer.output, negInput),
+      gradOutput[Tensor[Float]](2)).toTable
 
     val posConvGradTable = posConvLayer.backward(T.apply(posInput, srcIndices, dstIndices),
       posLinearGradTable[Tensor[Float]](1)).toTable
