@@ -72,3 +72,10 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     this
   }
 }
+
+object ScatterMean {
+  def apply[@specialized(Float, Double) T: ClassTag]
+  (batchSize: Int, nOutput: Int)
+  (implicit ev: TensorNumeric[T]): ScatterMean[T] =
+    new ScatterMean(batchSize, nOutput)
+}

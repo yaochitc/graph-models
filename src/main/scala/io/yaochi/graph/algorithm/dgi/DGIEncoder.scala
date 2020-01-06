@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.dgi
 
-import com.intel.analytics.bigdl.nn._
+import com.intel.analytics.bigdl.nn.{ScatterMean, _}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{T, Table}
 import io.yaochi.graph.util.LayerUtil
@@ -15,11 +15,11 @@ class DGIEncoder(batchSize: Int,
   private var posReshapeLayer: Reshape[Float] = buildReshapeLayer()
   private var negReshapeLayer: Reshape[Float] = buildReshapeLayer()
 
-  private val posConvLayer = buildConvLayer()
-  private val negConvLayer = buildConvLayer()
+  private val posConvLayer = ScatterMean[Float](batchSize, inputDim)
+  private val negConvLayer = ScatterMean[Float](batchSize, inputDim)
 
-  private val linearLayer = buildLinearLayer()
-  private val preluLayer = buildPReluLayer()
+  private val linearLayer = LayerUtil.buildLinear(2 * inputDim, outputDim, weights, true, start)
+  private val preluLayer = LayerUtil.buildPReluLayer(outputDim, weights, start + 2 * inputDim * outputDim + outputDim)
   private val posLinearModule = buildLinearModule()
   private val negLinearModule = buildLinearModule()
 
@@ -55,24 +55,12 @@ class DGIEncoder(batchSize: Int,
     null
   }
 
-  private def buildReshapeLayer():  Reshape[Float] = {
+  private def buildReshapeLayer(): Reshape[Float] = {
     if (reshape) {
       Reshape(Array(batchSize, inputDim))
     } else {
       null
     }
-  }
-
-  private def buildConvLayer(): ScatterMean[Float] = {
-    new ScatterMean[Float](batchSize, inputDim)
-  }
-
-  private def buildLinearLayer(): Linear[Float] = {
-    LayerUtil.buildLinear(2 * inputDim, outputDim, weights, true, start)
-  }
-
-  private def buildPReluLayer(): PReLU[Float] = {
-    LayerUtil.buildPReluLayer(outputDim, weights, start + 2 * inputDim * outputDim + outputDim)
   }
 
   private def buildLinearModule(): Sequential[Float] = {

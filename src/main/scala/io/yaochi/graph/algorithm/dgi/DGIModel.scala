@@ -10,7 +10,7 @@ class DGIModel(inputDim: Int,
   def getParameterSize: Int = {
     val conv1ParamSize = 2 * inputDim * hiddenDim + hiddenDim
     val conv2ParamSize = 2 * hiddenDim * outputDim + outputDim
-    conv1ParamSize + conv2ParamSize + hiddenDim + outputDim
+    conv1ParamSize + conv2ParamSize
   }
 
   def backward(batchSize: Int,
@@ -33,8 +33,10 @@ class DGIModel(inputDim: Int,
 
     val numSecondOrderNodes = posX.length / inputDim
     val secondEdgeEncoder = DGIEncoder(numSecondOrderNodes, inputDim, hiddenDim, weights, reshape = true)
-    val offset = secondEdgeEncoder.getParameterSize
+    var offset = secondEdgeEncoder.getParameterSize
     val firstEdgeEncoder = DGIEncoder(batchSize, hiddenDim, outputDim, weights, offset)
+    offset += firstEdgeEncoder.getParameterSize
+    val discriminator = DGIDiscriminator(outputDim, weights, offset)
 
     val secondEdgeOutputTable = secondEdgeEncoder.forward(posXTensor,
       negXTensor,
@@ -45,7 +47,8 @@ class DGIModel(inputDim: Int,
       firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor)
 
-
+    discriminator.forward(logitsTable[Tensor[Float]](1),
+      logitsTable[Tensor[Float]](2))
     0f
   }
 }
