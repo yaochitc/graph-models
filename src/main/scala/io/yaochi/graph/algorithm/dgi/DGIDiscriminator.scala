@@ -3,7 +3,7 @@ package io.yaochi.graph.algorithm.dgi
 import com.intel.analytics.bigdl.nn.{MM, Mean, Sequential, Sigmoid}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{T, Table}
-import io.yaochi.graph.util.LayerUtil
+import io.yaochi.graph.util.{BackwardUtil, LayerUtil}
 
 class DGIDiscriminator(inputDim: Int,
                        weights: Array[Float],
@@ -42,16 +42,7 @@ class DGIDiscriminator(inputDim: Int,
       summaryModule.backward(posZ, posMultiplyGradTable[Tensor[Float]](2)).toTensor[Float]
     )
 
-    val gradWeight = linearLayer.gradWeight
-
-    val gradWeightSize = gradWeight.size()
-    val outputSize = gradWeightSize(0)
-    val inputSize = gradWeightSize(1)
-
-    var curOffset = start
-    for (i <- 0 until outputSize; j <- 0 until inputSize) {
-      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
-    }
+    BackwardUtil.linearBackward(linearLayer, weights, start)
 
     T.apply(posGradTensor, negGradTensor)
   }

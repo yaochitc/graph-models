@@ -3,7 +3,7 @@ package io.yaochi.graph.algorithm.gcn
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.T
-import io.yaochi.graph.util.LayerUtil
+import io.yaochi.graph.util.{BackwardUtil, LayerUtil}
 
 class GCNEncoder(batchSize: Int,
                  inputDim: Int,
@@ -38,22 +38,8 @@ class GCNEncoder(batchSize: Int,
 
     val gradTensor = linearModule.backward(x, gradTable[Tensor[Float]](1)).toTensor[Float]
 
-    val gradWeight = linearLayer.gradWeight
-    val gradBias = biasLayer.gradBias
-
-    val gradWeightSize = gradWeight.size()
-    val outputSize = gradWeightSize(0)
-    val inputSize = gradWeightSize(1)
-
-    var curOffset = start
-    for (i <- 0 until outputSize; j <- 0 until inputSize) {
-      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
-    }
-    curOffset += outputSize * inputSize
-
-    for (i <- 0 until outputSize) {
-      weights(curOffset + i) = gradBias.valueAt(i + 1)
-    }
+    val curOffset = BackwardUtil.linearBackward(linearLayer, weights, start)
+    BackwardUtil.biasBackward(biasLayer, weights, curOffset)
 
     gradTensor
   }

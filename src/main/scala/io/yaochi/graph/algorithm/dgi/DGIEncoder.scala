@@ -3,7 +3,7 @@ package io.yaochi.graph.algorithm.dgi
 import com.intel.analytics.bigdl.nn.{ScatterMean, _}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{T, Table}
-import io.yaochi.graph.util.LayerUtil
+import io.yaochi.graph.util.{BackwardUtil, LayerUtil}
 
 class DGIEncoder(batchSize: Int,
                  inputDim: Int,
@@ -74,25 +74,8 @@ class DGIEncoder(batchSize: Int,
     val gradWeight = linearLayer.gradWeight
     val gradBias = linearLayer.gradBias
 
-    val gradWeightSize = gradWeight.size()
-    val outputSize = gradWeightSize(0)
-    val inputSize = gradWeightSize(1)
-
-    var curOffset = start
-    for (i <- 0 until outputSize; j <- 0 until inputSize) {
-      weights(curOffset + i * inputSize + j) = gradWeight.valueAt(i + 1, j + 1)
-    }
-    curOffset += outputSize * inputSize
-
-    for (i <- 0 until outputSize) {
-      weights(curOffset + i) = gradBias.valueAt(i + 1)
-    }
-    curOffset += outputSize
-
-    val preluGradWeight = preluLayer.gradWeight
-    for (i <- 0 until outputSize) {
-      weights(curOffset + i) = preluGradWeight.valueAt(i + 1)
-    }
+    val curOffset = BackwardUtil.linearBackward(linearLayer, weights, start)
+   BackwardUtil.preluBackward(preluLayer, weights, curOffset)
 
     if (reshape) {
       T.apply(
