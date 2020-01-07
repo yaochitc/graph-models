@@ -46,7 +46,7 @@ class DGIEncoder(batchSize: Int,
                negX: Tensor[Float],
                srcIndices: Tensor[Int],
                dstIndices: Tensor[Int],
-               counts: Tensor[Float]
+               counts: Tensor[Float],
                gradOutput: Table): Table = {
     val (posInput, negInput) = if (reshape) {
       (posReshapeLayer.output, negReshapeLayer.output)

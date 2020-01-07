@@ -44,7 +44,7 @@ class GCNModel(inputDim: Int,
     val logits = firstEdgeEncoder.forward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor, firstEdgeNormsTensor)
 
-    val outputTensor = GCNModel.softmax.forward(logits).max(2)._2
+    val outputTensor = LogSoftMax[Float]().forward(logits).max(2)._2
     (0 until outputTensor.nElement()).map(i => outputTensor.valueAt(i + 1, 1) - 1)
       .toArray
   }
@@ -82,8 +82,9 @@ class GCNModel(inputDim: Int,
 
     val targetTensor = Tensor.apply(targets.map(target => (target + 1).toFloat), Array(targets.length))
 
-    val loss = GCNModel.criterion.forward(logits, targetTensor)
-    val gradTensor = GCNModel.criterion.backward(logits, targetTensor)
+    val criterion = CrossEntropyCriterion[Float]()
+    val loss = criterion.forward(logits, targetTensor)
+    val gradTensor = criterion.backward(logits, targetTensor)
 
     val firstEdgeGradTensor = firstEdgeEncoder.backward(secondEdgeOutput, firstEdgeSrcIndicesTensor,
       firstEdgeDstIndicesTensor, firstEdgeNormsTensor, gradTensor)
@@ -95,10 +96,6 @@ class GCNModel(inputDim: Int,
 }
 
 object GCNModel {
-  private val criterion = CrossEntropyCriterion[Float]()
-
-  private val softmax = LogSoftMax[Float]()
-
   def apply(inputDim: Int,
             hiddenDim: Int,
             numClasses: Int): GCNModel = new GCNModel(inputDim, hiddenDim, numClasses)

@@ -68,6 +68,8 @@ class DGIDiscriminator(inputDim: Int,
       .add(MM(transB = true))
       .add(Sigmoid())
   }
+
+  def getParameterSize: Int = inputDim * inputDim
 }
 
 object DGIDiscriminator {

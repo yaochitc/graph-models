@@ -63,12 +63,16 @@ class DGIModel(inputDim: Int,
     val criterion = BCECriterion[Float]()
     val posTargetTensor = Tensor[Float]().resizeAs(posOutputTensor).fill(1f)
     val negTargetTensor = Tensor[Float]().resizeAs(negOutputTensor).fill(0f)
-    val loss = criterion.forward(posOutputTensor, posTargetTensor) +
-      criterion.forward(negOutputTensor, negTargetTensor)
+
+    val posLoss = criterion.forward(posOutputTensor, posTargetTensor)
+    val posGradTensor = criterion.backward(posOutputTensor, posTargetTensor).clone()
+    val negLoss = criterion.forward(negOutputTensor, negTargetTensor)
+    val negGradTensor = criterion.backward(negOutputTensor, negTargetTensor).clone()
+    val loss = posLoss + negLoss
 
     val gradTensorTable = T.apply(
-      criterion.backward(posOutputTensor, posTargetTensor),
-      criterion.backward(negOutputTensor, negTargetTensor)
+      posGradTensor,
+      negGradTensor
     )
 
     val discriminatorGradTable = discriminator.backward(logitsTable[Tensor[Float]](1),
