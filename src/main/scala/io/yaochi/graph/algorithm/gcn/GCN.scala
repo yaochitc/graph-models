@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.gcn
 
-import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition, SupervisedGNN}
+import io.yaochi.graph.algorithm.base.{GraphAdjPartition, SupervisedGNN}
 import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
