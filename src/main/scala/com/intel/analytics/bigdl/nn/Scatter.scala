@@ -56,6 +56,18 @@ class Scatter[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: TensorNume
     val srcIndexTensor = input[Tensor[Int]](3)
     val dstIndexTensor = input[Tensor[Int]](4)
 
+    weightBuffer.set(weightTensor.storage(),
+      weightTensor.storageOffset(),
+      Array(weightTensor.nElement()))
+
+    srcIndexBuffer.set(srcIndexTensor.storage(),
+      srcIndexTensor.storageOffset(),
+      Array(srcIndexTensor.nElement()))
+
+    dstIndexBuffer.set(dstIndexTensor.storage(),
+      dstIndexTensor.storageOffset(),
+      Array(dstIndexTensor.nElement()))
+
     val gradTensor = gradInput[Tensor[T]](1)
     gradTensor.resizeAs(inputTensor)
 

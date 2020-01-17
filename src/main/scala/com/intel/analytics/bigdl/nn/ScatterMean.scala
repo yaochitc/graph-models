@@ -56,6 +56,18 @@ class ScatterMean[T: ClassTag](batchSize: Int, nOutput: Int)(implicit ev: Tensor
     val dstIndexTensor = input[Tensor[Int]](3)
     val countTensor = input[Tensor[T]](4)
 
+    srcIndexBuffer.set(srcIndexTensor.storage(),
+      srcIndexTensor.storageOffset(),
+      Array(srcIndexTensor.nElement()))
+
+    dstIndexBuffer.set(dstIndexTensor.storage(),
+      dstIndexTensor.storageOffset(),
+      Array(dstIndexTensor.nElement()))
+
+    countBuffer.set(countTensor.storage(),
+      countTensor.storageOffset(),
+      Array(countTensor.nElement()))
+
     val gradTensor = gradInput[Tensor[T]](1)
     gradTensor.resizeAs(inputTensor)
 
