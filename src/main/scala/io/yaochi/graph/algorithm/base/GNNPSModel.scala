@@ -8,11 +8,9 @@ import com.tencent.angel.graph.client.initnodefeats4.{InitNodeFeats => InitNodeF
 import com.tencent.angel.graph.client.sampleFeats.{SampleNodeFeats, SampleNodeFeatsParam, SampleNodeFeatsResult}
 import com.tencent.angel.graph.client.sampleneighbor3.{SampleNeighbor, SampleNeighborParam, SampleNeighborResult}
 import com.tencent.angel.graph.client.summary.{NnzEdge, NnzFeature, NnzNeighbor, NnzNode}
-import com.tencent.angel.ml.math2.vector.{IntFloatVector, LongFloatVector}
+import com.tencent.angel.ml.math2.vector.IntFloatVector
 import com.tencent.angel.ml.matrix.psf.aggr.enhance.ScalarAggrResult
-import com.tencent.angel.spark.ml.psf.gcn.{GetLabels, GetLabelsResult}
-import com.tencent.angel.spark.models.{PSMatrix, PSVector}
-import com.tencent.angel.spark.util.VectorUtils
+import com.tencent.angel.spark.models.PSMatrix
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap
 
 abstract class GNNPSModel(val graph: PSMatrix) extends Serializable {
