@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.node2vec
 
-import io.yaochi.graph.algorithm.base.GNN
+import io.yaochi.graph.algorithm.base.{Edge, GNN}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
@@ -12,7 +12,7 @@ class Node2Vec extends GNN[Node2VecPSModel, Node2VecModel] {
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Node2VecModel): Node2VecPSModel = ???
 
-  override def makeGraph(edges: RDD[(Long, Long)], model: Node2VecPSModel): Dataset[_] = ???
+  override def makeGraph(edges: RDD[Edge], model: Node2VecPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = ???
 
   override def fit(model: Node2VecModel, PSModel: Node2VecPSModel, graph: Dataset[_]): Unit = {
 

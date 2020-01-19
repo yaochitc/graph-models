@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.dgi
 
-import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
+import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition}
 import io.yaochi.graph.params.{HasHiddenDim, HasOutputDim, HasUseSecondOrder}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -18,8 +18,8 @@ class DGI extends GNN[DGIPSModel, DGIModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  override def makeGraph(edges: RDD[(Long, Long)], model: DGIPSModel): Dataset[_] = {
-    val adj = edges.groupByKey($(partitionNum))
+  override def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = {
+    val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
 
     if ($(useSecondOrder)) {
       // if second order is required, init neighbors on PS

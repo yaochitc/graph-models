@@ -16,7 +16,7 @@ class GraphAdjPartition(val index: Int,
 }
 
 object GraphAdjPartition {
-  def apply(index: Int, iterator: Iterator[(Long, Iterable[Long])]): GraphAdjPartition = {
+  def apply(index: Int, iterator: Iterator[(Long, Iterable[Edge])]): GraphAdjPartition = {
     val indptr = new IntArrayList()
     val keys = new LongArrayList()
     val neighbours = new LongArrayList()
@@ -25,7 +25,7 @@ object GraphAdjPartition {
     while (iterator.hasNext) {
       val entry = iterator.next()
       val (node, ns) = (entry._1, entry._2)
-      ns.foreach(n => neighbours.add(n))
+      ns.foreach(n => neighbours.add(n.dst))
       indptr.add(neighbours.size())
       keys.add(node)
     }

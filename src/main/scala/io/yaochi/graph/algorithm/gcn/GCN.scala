@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.gcn
 
-import io.yaochi.graph.algorithm.base.{GraphAdjPartition, SupervisedGNN}
+import io.yaochi.graph.algorithm.base.{Edge, GraphAdjPartition, SupervisedGNN}
 import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio}
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
@@ -18,9 +18,9 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  override def makeGraph(edges: RDD[(Long, Long)], model: GCNPSModel): Dataset[_] = {
+  override def makeGraph(edges: RDD[Edge], model: GCNPSModel): Dataset[_] = {
     // build adj graph partitions
-    val adjGraph = edges.groupByKey($(partitionNum))
+    val adjGraph = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
       .mapPartitionsWithIndex((index, it) =>
         Iterator.single(GraphAdjPartition.apply(index, it)))
 

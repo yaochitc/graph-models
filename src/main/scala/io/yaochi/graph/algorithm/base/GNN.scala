@@ -40,22 +40,42 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
 
   def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Model): PSModel
 
-  def makeGraph(edges: RDD[(Long, Long)], model: PSModel): Dataset[_]
+  def makeGraph(edges: RDD[Edge], model: PSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_]
+
+  def makeEdges(edgeDF: DataFrame, hasWeight: Boolean, hasType: Boolean): RDD[Edge] = {
+    val edges = (hasWeight, hasType) match {
+      case (false, false) =>
+        edgeDF.select("src", "dst").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
+      case (true, false) =>
+        edgeDF.select("src", "dst", "weight").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getFloat(2)), None))
+      case (false, true) =>
+        edgeDF.select("src", "dst", "type").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
+      case (true, true) =>
+        edgeDF.select("src", "dst", "weight", "type").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getLong(1)), Some(row.getInt(2))))
+    }
+    edges.filter(f => f.src != f.dst)
+  }
 
   def initialize(edgeDF: DataFrame,
                  featureDF: DataFrame): (Model, PSModel, Dataset[_]) = {
     val start = System.currentTimeMillis()
 
+    val columns = edgeDF.columns
+    val hasWeight = columns.contains("weight")
+    val hasType = columns.contains("weight")
+
     // read edges
-    val edges = edgeDF.select("src", "dst").rdd
-      .map(row => (row.getLong(0), row.getLong(1)))
-      .filter(f => f._1 != f._2)
+    val edges = makeEdges(edgeDF, hasWeight, hasType)
 
     edges.persist(StorageLevel.DISK_ONLY)
 
     val (minId, maxId, numEdges) = edges.mapPartitions(DataLoaderUtils.summarizeApplyOp)
       .reduce(DataLoaderUtils.summarizeReduceOp)
-    val index = edges.flatMap(f => Iterator(f._1, f._2))
+    val index = edges.flatMap(f => Iterator(f.src, f.dst))
     println(s"minId=$minId maxId=$maxId numEdges=$numEdges")
 
     PSContext.getOrCreate(SparkContext.getOrCreate())
@@ -67,7 +87,7 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
 
     initFeatures(psModel, featureDF, minId, maxId)
 
-    val graph = makeGraph(edges, psModel)
+    val graph = makeGraph(edges, psModel, hasWeight, hasType)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")
