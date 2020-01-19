@@ -1,9 +1,7 @@
 package io.yaochi.graph.algorithm.base
 
 import com.tencent.angel.graph.client.getnodefeats2.{GetNodeFeats, GetNodeFeatsParam, GetNodeFeatsResult}
-import com.tencent.angel.graph.client.initNeighbor4.{InitNeighbor => InitNeighbor4, InitNeighborParam => InitNeighborParam4}
 import com.tencent.angel.graph.client.initNeighbor6.{InitNeighbor => InitNeighbor6, InitNeighborParam => InitNeighborParam6}
-import com.tencent.angel.graph.client.initnodefeats3.{InitNodeFeats => InitNodeFeats3, InitNodeFeatsParam => InitNodeFeatsParam3}
 import com.tencent.angel.graph.client.initnodefeats4.{InitNodeFeats => InitNodeFeats4, InitNodeFeatsParam => InitNodeFeatsParam4}
 import com.tencent.angel.graph.client.sampleFeats.{SampleNodeFeats, SampleNodeFeatsParam, SampleNodeFeatsResult}
 import com.tencent.angel.graph.client.sampleneighbor3.{SampleNeighbor, SampleNeighborParam, SampleNeighborResult}
@@ -41,16 +39,6 @@ abstract class GNNPSModel(val graph: PSMatrix) extends Serializable {
 
   def initNeighbors(keys: Array[Long],
                     indptr: Array[Int],
-                    neighbors: Array[Long]): Unit = {
-    println(s"full batch init neighbors")
-    val param = new InitNeighborParam4(graph.id, keys, indptr, neighbors)
-    val func = new InitNeighbor4(param)
-    graph.psfUpdate(func).get()
-  }
-
-
-  def initNeighbors(keys: Array[Long],
-                    indptr: Array[Int],
                     neighbors: Array[Long],
                     numBatch: Int): Unit = {
     println(s"mini batch init neighbors")
@@ -71,13 +59,6 @@ abstract class GNNPSModel(val graph: PSMatrix) extends Serializable {
                     end: Int): Unit = {
     val param = new InitNeighborParam6(graph.id, keys, indptr, neighbors, start, end)
     val func = new InitNeighbor6(param)
-    graph.psfUpdate(func).get()
-  }
-
-  def initNodeFeatures(keys: Array[Long], features: Array[IntFloatVector]): Unit = {
-    println(s"full batch init features")
-    val param = new InitNodeFeatsParam3(graph.id, keys, features)
-    val func = new InitNodeFeats3(param)
     graph.psfUpdate(func).get()
   }
 
