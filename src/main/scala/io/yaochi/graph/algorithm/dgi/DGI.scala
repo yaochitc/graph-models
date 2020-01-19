@@ -24,12 +24,12 @@ class DGI extends GNN[DGIPSModel, DGIModel]
     if ($(useSecondOrder)) {
       // if second order is required, init neighbors on PS
       adj.mapPartitionsWithIndex((index, it) =>
-        Iterator(GraphAdjPartition.apply(index, it)))
+        Iterator(GraphAdjPartition.apply(index, it, hasWeight, hasType)))
         .map(_.init(model, $(numBatchInit))).reduce(_ + _)
     }
 
     val dgiGraph = adj.mapPartitionsWithIndex((index, it) =>
-      Iterator.single(DGIPartition(GraphAdjPartition(index, it), $(useSecondOrder))))
+      Iterator.single(DGIPartition(GraphAdjPartition(index, it, hasWeight, hasType), $(useSecondOrder))))
 
     dgiGraph.persist($(storageLevel))
     dgiGraph.foreachPartition(_ => Unit)

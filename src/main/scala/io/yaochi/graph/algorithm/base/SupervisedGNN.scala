@@ -48,7 +48,7 @@ abstract class SupervisedGNN[PSModel <: SupervisedGNNPSModel, Model <: GNNModel]
 
   def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Model): PSModel
 
-  def makeGraph(edges: RDD[Edge], model: PSModel): Dataset[_]
+  def makeGraph(edges: RDD[Edge], model: PSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_]
 
   def makeEdges(edgeDF: DataFrame, hasWeight: Boolean, hasType: Boolean): RDD[Edge] = {
     val edges = (hasWeight, hasType) match {
@@ -100,7 +100,7 @@ abstract class SupervisedGNN[PSModel <: SupervisedGNNPSModel, Model <: GNNModel]
     labelDF.foreach(f => initLabels(psModel, f, minId, maxId))
     initFeatures(psModel, featureDF, minId, maxId)
 
-    val graph = makeGraph(edges, psModel)
+    val graph = makeGraph(edges, psModel, hasWeight, hasType)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")
