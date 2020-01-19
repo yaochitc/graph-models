@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.base
 
-import com.carrotsearch.hppc.FloatArrayList
+import it.unimi.dsi.fastutil.floats.FloatArrayList
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import it.unimi.dsi.fastutil.longs.LongArrayList
 
@@ -51,6 +51,6 @@ object GraphAdjPartition {
     new GraphAdjPartition(index, keys.toLongArray,
       indptr.toIntArray, neighbours.toLongArray,
       if (hasType) types.toIntArray else null,
-      if (hasWeight) weights.toArray else null)
+      if (hasWeight) weights.toFloatArray else null)
   }
 }
