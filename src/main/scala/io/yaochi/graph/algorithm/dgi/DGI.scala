@@ -14,7 +14,7 @@ class DGI extends GNN[DGIPSModel, DGIModel]
   override def makeModel(): DGIModel = DGIModel($(featureDim), $(hiddenDim), $(outputDim))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: DGIModel): DGIPSModel = {
-    DGIPSModel.apply(minId, maxId + 1, model.getParameterSize, getOptimizer,
+    DGIPSModel.apply(minId, maxId, model.getParameterSize, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
 

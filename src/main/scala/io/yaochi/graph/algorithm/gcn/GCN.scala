@@ -14,7 +14,7 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
   override def makeModel(): GCNModel = GCNModel($(featureDim), $(hiddenDim), $(numClasses))
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GCNModel): GCNPSModel = {
-    GCNPSModel.apply(minId, maxId + 1, model.getParameterSize, getOptimizer,
+    GCNPSModel.apply(minId, maxId, model.getParameterSize, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
