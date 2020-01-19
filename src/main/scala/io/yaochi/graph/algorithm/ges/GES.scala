@@ -11,5 +11,5 @@ class GES extends GNN[GESPSModel, GESModel] {
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GESModel): GESPSModel = ???
 
-  override def makeGraph(edges: RDD[Edge], model: GESPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = ???
+  override def makeGraph(edges: RDD[Edge], model: GESPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
 }

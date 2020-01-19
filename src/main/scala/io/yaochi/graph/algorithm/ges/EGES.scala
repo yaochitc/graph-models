@@ -11,6 +11,6 @@ class EGES extends GNN[EGESPSModel, EGESModel] {
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: EGESModel): EGESPSModel = ???
 
-  override def makeGraph(edges: RDD[Edge], model: EGESPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = ???
+  override def makeGraph(edges: RDD[Edge], model: EGESPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
 
 }

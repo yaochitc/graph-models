@@ -18,18 +18,18 @@ class DGI extends GNN[DGIPSModel, DGIModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  override def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = {
+  override def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
     val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
 
     if ($(useSecondOrder)) {
       // if second order is required, init neighbors on PS
       adj.mapPartitionsWithIndex((index, it) =>
-        Iterator(GraphAdjPartition.apply(index, it, hasWeight, hasType)))
+        Iterator(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
         .map(_.init(model, $(numBatchInit))).reduce(_ + _)
     }
 
     val dgiGraph = adj.mapPartitionsWithIndex((index, it) =>
-      Iterator.single(DGIPartition(GraphAdjPartition(index, it, hasWeight, hasType), $(useSecondOrder))))
+      Iterator.single(DGIPartition(GraphAdjPartition(index, it, hasType, hasWeight), $(useSecondOrder))))
 
     dgiGraph.persist($(storageLevel))
     dgiGraph.foreachPartition(_ => Unit)

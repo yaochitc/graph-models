@@ -18,11 +18,11 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  override def makeGraph(edges: RDD[Edge], model: GCNPSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = {
+  override def makeGraph(edges: RDD[Edge], model: GCNPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
     // build adj graph partitions
     val adjGraph = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
       .mapPartitionsWithIndex((index, it) =>
-        Iterator.single(GraphAdjPartition.apply(index, it, hasWeight, hasType)))
+        Iterator.single(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
 
     adjGraph.persist($(storageLevel))
     adjGraph.foreachPartition(_ => Unit)

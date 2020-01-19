@@ -12,7 +12,7 @@ class Line extends GNN[LinePSModel, LineModel] {
 
   override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: LineModel): LinePSModel = ???
 
-  override def makeGraph(edges: RDD[Edge], model: LinePSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_] = ???
+  override def makeGraph(edges: RDD[Edge], model: LinePSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
 
   override def fit(model: LineModel, psModel: LinePSModel, graph: Dataset[_]): Unit = {
 

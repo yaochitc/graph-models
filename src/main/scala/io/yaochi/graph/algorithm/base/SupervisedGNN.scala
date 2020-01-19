@@ -48,22 +48,22 @@ abstract class SupervisedGNN[PSModel <: SupervisedGNNPSModel, Model <: GNNModel]
 
   def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: Model): PSModel
 
-  def makeGraph(edges: RDD[Edge], model: PSModel, hasWeight: Boolean, hasType: Boolean): Dataset[_]
+  def makeGraph(edges: RDD[Edge], model: PSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_]
 
-  def makeEdges(edgeDF: DataFrame, hasWeight: Boolean, hasType: Boolean): RDD[Edge] = {
-    val edges = (hasWeight, hasType) match {
+  def makeEdges(edgeDF: DataFrame, hasType: Boolean, hasWeight: Boolean): RDD[Edge] = {
+    val edges = (hasType, hasWeight) match {
       case (false, false) =>
         edgeDF.select("src", "dst").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
       case (true, false) =>
         edgeDF.select("src", "dst", "weight").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getFloat(2)), None))
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
       case (false, true) =>
         edgeDF.select("src", "dst", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
+          .map(row => Edge(row.getLong(0), row.getLong(1), None, Some(row.getFloat(2))))
       case (true, true) =>
         edgeDF.select("src", "dst", "weight", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getLong(1)), Some(row.getInt(2))))
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getLong(1))))
     }
     edges.filter(f => f.src != f.dst)
   }
@@ -77,11 +77,11 @@ abstract class SupervisedGNN[PSModel <: SupervisedGNNPSModel, Model <: GNNModel]
     val start = System.currentTimeMillis()
 
     val columns = edgeDF.columns
+    val hasType = columns.contains("type")
     val hasWeight = columns.contains("weight")
-    val hasType = columns.contains("weight")
 
     // read edges
-    val edges = makeEdges(edgeDF, hasWeight, hasType)
+    val edges = makeEdges(edgeDF, hasType, hasWeight)
 
     edges.persist(StorageLevel.DISK_ONLY)
 
@@ -100,7 +100,7 @@ abstract class SupervisedGNN[PSModel <: SupervisedGNNPSModel, Model <: GNNModel]
     labelDF.foreach(f => initLabels(psModel, f, minId, maxId))
     initFeatures(psModel, featureDF, minId, maxId)
 
-    val graph = makeGraph(edges, psModel, hasWeight, hasType)
+    val graph = makeGraph(edges, psModel, hasType, hasWeight)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")
