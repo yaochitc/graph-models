@@ -32,10 +32,10 @@ object CoraDataset {
       .collect()
       .sorted
 
-    val node2Id = HashMap(nodes.view.zipWithIndex: _*)
+    val node2Id = HashMap[String, Int](nodes.view.zipWithIndex: _*)
     val node2IdBc = ss.sparkContext.broadcast(node2Id)
 
-    val label2Id = HashMap(labels.view.zipWithIndex: _*)
+    val label2Id = HashMap[String, Int](labels.view.zipWithIndex: _*)
     val label2IdBc = ss.sparkContext.broadcast(label2Id)
 
     val encodedNodeRDD = nodeRDD.map(fields => {
@@ -72,17 +72,4 @@ object CoraDataset {
     )
   }
 
-  private def loadEdges(directory: String): DataFrame = {
-    val filename = "cora.cites"
-    val input = Paths.get(directory, filename)
-
-    GraphIO.loadEdges(input.toString, isWeighted = false, isFeatured = false, isTyped = false, sep = "\t")
-  }
-
-  private def loadNodes(directory: String): DataFrame = {
-    val filename = "cora.content"
-    val input = Paths.get(directory, filename)
-
-    GraphIO.loadNodes(input.toString, isWeighted = false, isFeatured = true, isTyped = false, sep = ",")
-  }
 }

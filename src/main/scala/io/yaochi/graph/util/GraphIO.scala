@@ -43,7 +43,7 @@ object GraphIO {
     val ss = SparkSession.builder().getOrCreate()
 
     var schema = StructType(Seq(
-      StructField("node", LongType, nullable = false)
+      StructField("id", LongType, nullable = false)
     ))
 
     if (isWeighted) {
@@ -70,7 +70,7 @@ object GraphIO {
     val ss = SparkSession.builder().getOrCreate()
 
     var schema = StructType(Seq(
-      StructField("node", LongType, nullable = false),
+      StructField("id", LongType, nullable = false),
       StructField("label", FloatType, nullable = false)
     ))
 

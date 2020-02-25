@@ -38,7 +38,7 @@ object BlogCatalogDataset {
     val input = Paths.get(directory, filename)
 
     val schema = StructType(Seq(
-      StructField("node", LongType, nullable = false),
+      StructField("id", LongType, nullable = false),
       StructField("feature", StringType, nullable = false)
     ))
 

@@ -20,9 +20,8 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
   override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
 
   def initFeatures(model: PSModel, features: Dataset[Row], minId: Long, maxId: Long): Unit = {
-    features.rdd.filter(row => row.length > 0)
-      .filter(row => row.get(0) != null)
-      .map(row => (row.getLong(0), row.getString(1)))
+    features.select("id", "feature")
+      .rdd.map(row => (row.getLong(0), row.getString(1)))
       .filter(f => f._1 >= minId && f._1 <= maxId)
       .map(f => (f._1, SampleParser.parseFeature(f._2, $(featureDim), $(dataFormat))))
       .mapPartitionsWithIndex((index, it) =>
@@ -36,14 +35,14 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
         edgeDF.select("src", "dst").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
       case (true, false) =>
-        edgeDF.select("src", "dst", "weight").rdd
+        edgeDF.select("src", "dst", "type").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
       case (false, true) =>
-        edgeDF.select("src", "dst", "type").rdd
+        edgeDF.select("src", "dst", "weight").rdd
           .map(row => Edge(row.getLong(0), row.getLong(1), None, Some(row.getFloat(2))))
       case (true, true) =>
-        edgeDF.select("src", "dst", "weight", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getLong(1))))
+        edgeDF.select("src", "dst", "type", "weight").rdd
+          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getFloat(1))))
     }
     edges.filter(f => f.src != f.dst)
   }

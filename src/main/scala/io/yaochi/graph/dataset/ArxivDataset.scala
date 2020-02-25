@@ -28,7 +28,7 @@ object ArxivDataset {
       .collect()
       .sorted
 
-    val node2Id = HashMap(nodes.view.zipWithIndex: _*)
+    val node2Id = HashMap[Long, Int](nodes.view.zipWithIndex: _*)
     val node2IdBc = ss.sparkContext.broadcast(node2Id)
 
     val encodedRDD = rdd.map(fields => {
