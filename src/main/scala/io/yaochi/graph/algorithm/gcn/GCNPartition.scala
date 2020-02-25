@@ -8,6 +8,7 @@ class GCNPartition(index: Int,
                    keys: Array[Long],
                    indptr: Array[Int],
                    neighbors: Array[Long],
+                   useSecondOrder: Boolean,
                    trainIdx: Array[Int],
                    trainLabels: Array[Float],
                    testIdx: Array[Int],
@@ -67,7 +68,7 @@ class GCNPartition(index: Int,
 
     val (first, second) = MakeEdgeIndex.makeEdgeIndex(batchIdx.map(f => f._1),
       keys, indptr, neighbors, srcs, dsts,
-      batchKeys, index, numSample, psModel, true)
+      batchKeys, index, numSample, psModel, useSecondOrder)
     val x = MakeFeature.makeFeatures(index, featureDim, psModel)
 
     val weights = psModel.readWeights()
@@ -133,7 +134,7 @@ class GCNPartition(index: Int,
 
     val (first, second) = MakeEdgeIndex.makeEdgeIndex(batchIdx.map(f => f._1),
       keys, indptr, neighbors, srcs, dsts,
-      batchKeys, index, numSample, psModel, true)
+      batchKeys, index, numSample, psModel, useSecondOrder)
     val x = MakeFeature.makeFeatures(index, featureDim, psModel)
     val outputs = model.forward(batchIdx.length, x,
       first, second, weights)
@@ -149,6 +150,7 @@ class GCNPartition(index: Int,
 object GCNPartition {
   def apply(adjPartition: GraphAdjPartition,
             model: GCNPSModel,
+            useSecondOrder: Boolean,
             testRatio: Float): GCNPartition = {
     val keys = adjPartition.keys
     val myLabels = model.readLabels2(keys)
@@ -175,6 +177,7 @@ object GCNPartition {
       adjPartition.keys,
       adjPartition.indptr,
       adjPartition.neighbours,
+      useSecondOrder,
       trainIdx,
       trainLabels,
       testIdx,

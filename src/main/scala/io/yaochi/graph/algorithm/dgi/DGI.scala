@@ -28,7 +28,7 @@ class DGI extends GNN[DGIPSModel, DGIModel]
     if ($(useSecondOrder)) {
       // if second order is required, init neighbors on PS
       adj.mapPartitionsWithIndex((index, it) =>
-        Iterator(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+        Iterator(GraphAdjPartition(index, it, hasType, hasWeight)))
         .map(_.init(model, $(numBatchInit))).reduce(_ + _)
     }
 

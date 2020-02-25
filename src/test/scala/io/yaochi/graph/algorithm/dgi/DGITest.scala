@@ -32,7 +32,6 @@ class DGITest {
     dgi.setStepSize(0.02)
     dgi.setPSPartitionNum(10)
     dgi.setPartitionNum(1)
-    dgi.setUseBalancePartition(false)
     dgi.setNumEpoch(100)
     dgi.setStorageLevel("MEMORY_ONLY")
 

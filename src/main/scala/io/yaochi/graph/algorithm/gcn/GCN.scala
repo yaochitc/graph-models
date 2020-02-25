@@ -2,7 +2,7 @@ package io.yaochi.graph.algorithm.gcn
 
 import com.tencent.angel.spark.context.PSContext
 import io.yaochi.graph.algorithm.base.{Edge, GraphAdjPartition, SupervisedGNN}
-import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio}
+import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio, HasUseSecondOrder}
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.Transformer
@@ -13,7 +13,7 @@ import org.apache.spark.storage.StorageLevel
 
 class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
   with HasHiddenDim with HasNumClasses
-  with HasTestRatio {
+  with HasUseSecondOrder with HasTestRatio {
 
   def makeModel(): GCNModel = GCNModel($(featureDim), $(hiddenDim), $(numClasses))
 
@@ -23,20 +23,19 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
   }
 
   def makeGraph(edges: RDD[Edge], model: GCNPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
-    // build adj graph partitions
-    val adjGraph = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
-      .mapPartitionsWithIndex((index, it) =>
-        Iterator.single(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+    val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
 
-    adjGraph.persist($(storageLevel))
-    adjGraph.foreachPartition(_ => Unit)
-    adjGraph.map(_.init(model, $(numBatchInit))).reduce(_ + _)
+    if ($(useSecondOrder)) {
+      adj.mapPartitionsWithIndex((index, it) =>
+        Iterator(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+        .map(_.init(model, $(numBatchInit))).reduce(_ + _)
+    }
 
-    // build GCN graph partitions
-    val gcnGraph = adjGraph.map(GCNPartition(_, model, $(testRatio)))
+    val gcnGraph = adj.mapPartitionsWithIndex((index, it) =>
+      Iterator.single(GCNPartition(GraphAdjPartition(index, it, hasType, hasWeight), model, $(useSecondOrder), $(testRatio))))
+
     gcnGraph.persist($(storageLevel))
-    gcnGraph.count()
-    adjGraph.unpersist(true)
+    gcnGraph.foreachPartition(_ => Unit)
 
     implicit val encoder = org.apache.spark.sql.Encoders.kryo[GCNPartition]
     SparkSession.builder().getOrCreate().createDataset(gcnGraph)
