@@ -1,24 +1,28 @@
 package io.yaochi.graph.algorithm.dgi
 
+import com.tencent.angel.spark.context.PSContext
 import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition}
 import io.yaochi.graph.params.{HasHiddenDim, HasOutputDim, HasUseSecondOrder}
+import io.yaochi.graph.util.DataLoaderUtils
+import org.apache.spark.SparkContext
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.storage.StorageLevel
 
 class DGI extends GNN[DGIPSModel, DGIModel]
   with HasHiddenDim
   with HasOutputDim with HasUseSecondOrder {
 
-  override def makeModel(): DGIModel = DGIModel($(featureDim), $(hiddenDim), $(outputDim))
+  def makeModel(): DGIModel = DGIModel($(featureDim), $(hiddenDim), $(outputDim))
 
-  override def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: DGIModel): DGIPSModel = {
+  def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: DGIModel): DGIPSModel = {
     DGIPSModel.apply(minId, maxId, model.getParameterSize, getOptimizer,
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  override def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
+  def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
     val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
 
     if ($(useSecondOrder)) {
@@ -38,8 +42,41 @@ class DGI extends GNN[DGIPSModel, DGIModel]
     SparkSession.builder().getOrCreate().createDataset(dgiGraph)
   }
 
-  override
-  def fit(model: DGIModel, psModel: DGIPSModel, graph: Dataset[_]): Unit = {
+  override def initialize(edgeDF: DataFrame, featureDF: DataFrame): (DGIModel, DGIPSModel, Dataset[_]) = {
+    val start = System.currentTimeMillis()
+
+    val columns = edgeDF.columns
+    val hasType = columns.contains("type")
+    val hasWeight = columns.contains("weight")
+
+    // read edges
+    val edges = makeEdges(edgeDF, hasType, hasWeight)
+
+    edges.persist(StorageLevel.DISK_ONLY)
+
+    val (minId, maxId, numEdges) = edges.mapPartitions(DataLoaderUtils.summarizeApplyOp)
+      .reduce(DataLoaderUtils.summarizeReduceOp)
+    val index = edges.flatMap(f => Iterator(f.src, f.dst))
+    println(s"minId=$minId maxId=$maxId numEdges=$numEdges")
+
+    PSContext.getOrCreate(SparkContext.getOrCreate())
+
+    val model = makeModel()
+
+    val psModel = makePSModel(minId, maxId + 1, index, model)
+    psModel.initialize()
+
+    initFeatures(psModel, featureDF, minId, maxId)
+
+    val graph = makeGraph(edges, psModel, hasType, hasWeight)
+
+    val end = System.currentTimeMillis()
+    println(s"initialize cost ${(end - start) / 1000}s")
+
+    (model, psModel, graph)
+  }
+
+  override def fit(model: DGIModel, psModel: DGIPSModel, graph: Dataset[_]): Unit = {
     val optim = getOptimizer
 
     for (curEpoch <- 1 to $(numEpoch)) {
