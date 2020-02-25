@@ -2,8 +2,7 @@ package io.yaochi.graph.algorithm.base
 
 import io.yaochi.graph.optim.AsyncOptim
 
-abstract class GNNPartition[PSModel <: GNNPSModel, Model <: GNNModel](index: Int,
-                                                                      keys: Array[Long],
+abstract class GNNPartition[PSModel <: GNNPSModel, Model <: GNNModel](keys: Array[Long],
                                                                       indptr: Array[Int],
                                                                       neighbors: Array[Long]) extends Serializable {
 

@@ -4,8 +4,7 @@ import it.unimi.dsi.fastutil.floats.FloatArrayList
 import it.unimi.dsi.fastutil.ints.IntArrayList
 import it.unimi.dsi.fastutil.longs.LongArrayList
 
-class GraphAdjPartition(val index: Int,
-                        val keys: Array[Long],
+class GraphAdjPartition(val keys: Array[Long],
                         val indptr: Array[Int],
                         val neighbours: Array[Long],
                         val types: Array[Int],
@@ -20,7 +19,7 @@ class GraphAdjPartition(val index: Int,
 }
 
 object GraphAdjPartition {
-  def apply(index: Int, iterator: Iterator[(Long, Iterable[Edge])],
+  def apply(iterator: Iterator[(Long, Iterable[Edge])],
             hasType: Boolean, hasWeight: Boolean): GraphAdjPartition = {
     val indptr = new IntArrayList()
     val keys = new LongArrayList()
@@ -48,7 +47,7 @@ object GraphAdjPartition {
       keys.add(node)
     }
 
-    new GraphAdjPartition(index, keys.toLongArray,
+    new GraphAdjPartition(keys.toLongArray,
       indptr.toIntArray, neighbours.toLongArray,
       if (hasType) types.toIntArray else null,
       if (hasWeight) weights.toFloatArray else null)
