@@ -5,8 +5,7 @@ import io.yaochi.graph.optim.AsyncOptim
 abstract class GNNPartition[PSModel <: GNNPSModel, Model <: GNNModel](index: Int,
                                                                       keys: Array[Long],
                                                                       indptr: Array[Int],
-                                                                      neighbors: Array[Long],
-                                                                      useSecondOrder: Boolean) extends Serializable {
+                                                                      neighbors: Array[Long]) extends Serializable {
 
   def numNodes: Long = keys.length
 

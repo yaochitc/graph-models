@@ -9,7 +9,7 @@ class DGIPartition(index: Int,
                    indptr: Array[Int],
                    neighbors: Array[Long],
                    useSecondOrder: Boolean) extends
-  GNNPartition[DGIPSModel, DGIModel](index, keys, indptr, neighbors, useSecondOrder) {
+  GNNPartition[DGIPSModel, DGIModel](index, keys, indptr, neighbors) {
 
   override def trainEpoch(curEpoch: Int,
                           batchSize: Int,

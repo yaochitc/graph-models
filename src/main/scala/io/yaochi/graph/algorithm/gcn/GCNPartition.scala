@@ -12,7 +12,7 @@ class GCNPartition(index: Int,
                    trainLabels: Array[Float],
                    testIdx: Array[Int],
                    testLabels: Array[Float]) extends
-  GNNPartition[GCNPSModel, GCNModel](index, keys, indptr, neighbors, true) {
+  GNNPartition[GCNPSModel, GCNModel](index, keys, indptr, neighbors) {
 
   def getTrainTestSize: (Int, Int) = (trainIdx.length, testIdx.length)
 
