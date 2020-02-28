@@ -16,7 +16,7 @@ object CoraDataset {
     val contentInput = Paths.get(directory, contentFilename)
 
     val nodeSchema = StructType(Seq(
-      StructField("node", LongType, nullable = false),
+      StructField("id", LongType, nullable = false),
       StructField("feature", StringType, nullable = false),
       StructField("label", FloatType, nullable = false)
     ))
@@ -67,8 +67,8 @@ object CoraDataset {
     val featureLabelDF = ss.createDataFrame(encodedNodeRDD, nodeSchema)
 
     (ss.createDataFrame(edgeRDD, edgeSchema),
-      featureLabelDF.select("node", "feature"),
-      featureLabelDF.select("node", "label")
+      featureLabelDF.select("id", "feature"),
+      featureLabelDF.select("id", "label")
     )
   }
 
