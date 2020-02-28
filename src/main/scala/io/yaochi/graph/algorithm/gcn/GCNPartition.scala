@@ -4,8 +4,7 @@ import io.yaochi.graph.algorithm.base._
 import io.yaochi.graph.optim.AsyncOptim
 import it.unimi.dsi.fastutil.longs.{Long2IntOpenHashMap, LongArrayList, LongOpenHashSet}
 
-class GCNPartition(index: Int,
-                   keys: Array[Long],
+class GCNPartition(keys: Array[Long],
                    indptr: Array[Int],
                    neighbors: Array[Long],
                    useSecondOrder: Boolean,
@@ -13,7 +12,7 @@ class GCNPartition(index: Int,
                    trainLabels: Array[Float],
                    testIdx: Array[Int],
                    testLabels: Array[Float]) extends
-  GNNPartition[GCNPSModel, GCNModel](index, keys, indptr, neighbors) {
+  GNNPartition[GCNPSModel, GCNModel](keys, indptr, neighbors) {
 
   def getTrainTestSize: (Int, Int) = (trainIdx.length, testIdx.length)
 
@@ -173,8 +172,7 @@ object GCNPartition {
     val splitPoint = (size * (1 - testRatio)).toInt
     val (trainIdx, testIdx) = idxHasLabels.splitAt(splitPoint)
     val (trainLabels, testLabels) = labels.splitAt(splitPoint)
-    new GCNPartition(adjPartition.index,
-      adjPartition.keys,
+    new GCNPartition(adjPartition.keys,
       adjPartition.indptr,
       adjPartition.neighbours,
       useSecondOrder,

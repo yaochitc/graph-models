@@ -24,27 +24,15 @@ abstract class GNN[PSModel <: GNNPSModel, Model <: GNNModel](val uid: String) ex
       .rdd.map(row => (row.getLong(0), row.getString(1)))
       .filter(f => f._1 >= minId && f._1 <= maxId)
       .map(f => (f._1, SampleParser.parseFeature(f._2, $(featureDim), $(dataFormat))))
-      .mapPartitionsWithIndex((index, it) =>
-        Iterator(NodeFeaturePartition.apply(index, it)))
+      .mapPartitions(it =>
+        Iterator(NodeFeaturePartition.apply(it)))
       .map(_.init(model, $(numBatchInit))).count()
   }
 
-  def makeEdges(edgeDF: DataFrame, hasType: Boolean, hasWeight: Boolean): RDD[Edge] = {
-    val edges = (hasType, hasWeight) match {
-      case (false, false) =>
-        edgeDF.select("src", "dst").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), None, None))
-      case (true, false) =>
-        edgeDF.select("src", "dst", "type").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), None))
-      case (false, true) =>
-        edgeDF.select("src", "dst", "weight").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), None, Some(row.getFloat(2))))
-      case (true, true) =>
-        edgeDF.select("src", "dst", "type", "weight").rdd
-          .map(row => Edge(row.getLong(0), row.getLong(1), Some(row.getInt(2)), Some(row.getFloat(1))))
-    }
-    edges.filter(f => f.src != f.dst)
+  def makeEdges(edgeDF: DataFrame): RDD[(Long, Long)] = {
+    edgeDF.select("src", "dst").rdd
+      .map(row => (row.getLong(0), row.getLong(1)))
+      .filter(f => f._1 != f._2)
   }
 
   def initialize(edgeDF: DataFrame,

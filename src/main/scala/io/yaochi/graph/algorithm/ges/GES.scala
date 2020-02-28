@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.ges
 
-import io.yaochi.graph.algorithm.base.{Edge, GNN}
+import io.yaochi.graph.algorithm.base.GNN
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Dataset}
 
@@ -10,7 +10,7 @@ class GES extends GNN[GESPSModel, GESModel] {
 
   def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: GESModel): GESPSModel = ???
 
-  def makeGraph(edges: RDD[Edge], model: GESPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
+  def makeGraph(edges: RDD[(Long, Long)], model: GESPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
 
   override def initialize(edgeDF: DataFrame, featureDF: DataFrame): (GESModel, GESPSModel, Dataset[_]) = ???
 

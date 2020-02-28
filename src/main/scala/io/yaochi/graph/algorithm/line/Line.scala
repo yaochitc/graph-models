@@ -1,6 +1,6 @@
 package io.yaochi.graph.algorithm.line
 
-import io.yaochi.graph.algorithm.base.{Edge, GNN}
+import io.yaochi.graph.algorithm.base.GNN
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.rdd.RDD
@@ -12,7 +12,7 @@ class Line extends GNN[LinePSModel, LineModel] {
 
   def makePSModel(minId: Long, maxId: Long, index: RDD[Long], model: LineModel): LinePSModel = ???
 
-  def makeGraph(edges: RDD[Edge], model: LinePSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
+  def makeGraph(edges: RDD[(Long, Long)], model: LinePSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = ???
 
   override def initialize(edgeDF: DataFrame, featureDF: DataFrame): (LineModel, LinePSModel, Dataset[_]) = ???
 

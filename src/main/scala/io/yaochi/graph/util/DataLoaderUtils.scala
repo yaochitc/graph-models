@@ -1,16 +1,14 @@
 package io.yaochi.graph.util
 
-import io.yaochi.graph.algorithm.base.Edge
-
 object DataLoaderUtils {
 
-  def summarizeApplyOp(iterator: Iterator[Edge]): Iterator[(Long, Long, Long)] = {
+  def summarizeApplyOp(iterator: Iterator[(Long, Long)]): Iterator[(Long, Long, Long)] = {
     var minId = Long.MaxValue
     var maxId = Long.MinValue
     var numEdges = 0
     while (iterator.hasNext) {
       val entry = iterator.next()
-      val (src, dst) = (entry.src, entry.dst)
+      val (src, dst) = entry
       minId = math.min(minId, src)
       minId = math.min(minId, dst)
       maxId = math.max(maxId, src)

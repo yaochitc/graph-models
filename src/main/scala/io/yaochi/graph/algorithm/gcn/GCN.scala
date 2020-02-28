@@ -1,7 +1,7 @@
 package io.yaochi.graph.algorithm.gcn
 
 import com.tencent.angel.spark.context.PSContext
-import io.yaochi.graph.algorithm.base.{Edge, GraphAdjPartition, SupervisedGNN}
+import io.yaochi.graph.algorithm.base.{GraphAdjPartition, SupervisedGNN}
 import io.yaochi.graph.params.{HasHiddenDim, HasNumClasses, HasTestRatio, HasUseSecondOrder}
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.SparkContext
@@ -22,17 +22,17 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  def makeGraph(edges: RDD[Edge], model: GCNPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
-    val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
+  def makeGraph(edges: RDD[(Long, Long)], model: GCNPSModel): Dataset[_] = {
+    val adj = edges.map(f => (f._1, f)).groupByKey($(partitionNum))
 
     if ($(useSecondOrder)) {
-      adj.mapPartitionsWithIndex((index, it) =>
-        Iterator(GraphAdjPartition.apply(index, it, hasType, hasWeight)))
+      adj.mapPartitions(it =>
+        Iterator(GraphAdjPartition.apply(it)))
         .map(_.init(model, $(numBatchInit))).reduce(_ + _)
     }
 
-    val gcnGraph = adj.mapPartitionsWithIndex((index, it) =>
-      Iterator.single(GCNPartition(GraphAdjPartition(index, it, hasType, hasWeight), model, $(useSecondOrder), $(testRatio))))
+    val gcnGraph = adj.mapPartitions(it =>
+      Iterator.single(GCNPartition(GraphAdjPartition(it), model, $(useSecondOrder), $(testRatio))))
 
     gcnGraph.persist($(storageLevel))
     gcnGraph.foreachPartition(_ => Unit)
@@ -44,18 +44,14 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
   override def initialize(edgeDF: DataFrame, featureDF: DataFrame, labelDF: Option[DataFrame]): (GCNModel, GCNPSModel, Dataset[_]) = {
     val start = System.currentTimeMillis()
 
-    val columns = edgeDF.columns
-    val hasType = columns.contains("type")
-    val hasWeight = columns.contains("weight")
-
     // read edges
-    val edges = makeEdges(edgeDF, hasType, hasWeight)
+    val edges = makeEdges(edgeDF)
 
     edges.persist(StorageLevel.DISK_ONLY)
 
     val (minId, maxId, numEdges) = edges.mapPartitions(DataLoaderUtils.summarizeApplyOp)
       .reduce(DataLoaderUtils.summarizeReduceOp)
-    val index = edges.flatMap(f => Iterator(f.src, f.dst))
+    val index = edges.flatMap(f => Iterator(f._1, f._2))
     println(s"minId=$minId maxId=$maxId numEdges=$numEdges")
 
     PSContext.getOrCreate(SparkContext.getOrCreate())
@@ -68,7 +64,7 @@ class GCN extends SupervisedGNN[GCNPSModel, GCNModel]
     labelDF.foreach(f => initLabels(psModel, f, minId, maxId))
     initFeatures(psModel, featureDF, minId, maxId)
 
-    val graph = makeGraph(edges, psModel, hasType, hasWeight)
+    val graph = makeGraph(edges, psModel)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")

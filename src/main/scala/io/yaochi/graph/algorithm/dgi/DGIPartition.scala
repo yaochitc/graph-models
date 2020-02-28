@@ -4,12 +4,11 @@ import io.yaochi.graph.algorithm.base._
 import io.yaochi.graph.optim.AsyncOptim
 import it.unimi.dsi.fastutil.longs.{Long2IntOpenHashMap, LongArrayList, LongOpenHashSet}
 
-class DGIPartition(index: Int,
-                   keys: Array[Long],
+class DGIPartition(keys: Array[Long],
                    indptr: Array[Int],
                    neighbors: Array[Long],
                    useSecondOrder: Boolean) extends
-  GNNPartition[DGIPSModel, DGIModel](index, keys, indptr, neighbors) {
+  GNNPartition[DGIPSModel, DGIModel](keys, indptr, neighbors) {
 
   override def trainEpoch(curEpoch: Int,
                           batchSize: Int,
@@ -75,8 +74,7 @@ class DGIPartition(index: Int,
 object DGIPartition {
   def apply(adjPartition: GraphAdjPartition,
             useSecondOrder: Boolean): DGIPartition = {
-    new DGIPartition(adjPartition.index,
-      adjPartition.keys,
+    new DGIPartition(adjPartition.keys,
       adjPartition.indptr,
       adjPartition.neighbours,
       useSecondOrder)

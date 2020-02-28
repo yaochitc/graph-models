@@ -1,7 +1,7 @@
 package io.yaochi.graph.algorithm.dgi
 
 import com.tencent.angel.spark.context.PSContext
-import io.yaochi.graph.algorithm.base.{Edge, GNN, GraphAdjPartition}
+import io.yaochi.graph.algorithm.base.{GNN, GraphAdjPartition}
 import io.yaochi.graph.params.{HasHiddenDim, HasOutputDim, HasUseSecondOrder}
 import io.yaochi.graph.util.DataLoaderUtils
 import org.apache.spark.SparkContext
@@ -22,18 +22,18 @@ class DGI extends GNN[DGIPSModel, DGIModel]
       index, $(psPartitionNum), $(useBalancePartition))
   }
 
-  def makeGraph(edges: RDD[Edge], model: DGIPSModel, hasType: Boolean, hasWeight: Boolean): Dataset[_] = {
-    val adj = edges.map(f => (f.src, f)).groupByKey($(partitionNum))
+  def makeGraph(edges: RDD[(Long, Long)], model: DGIPSModel): Dataset[_] = {
+    val adj = edges.map(f => (f._1, f)).groupByKey($(partitionNum))
 
     if ($(useSecondOrder)) {
       // if second order is required, init neighbors on PS
-      adj.mapPartitionsWithIndex((index, it) =>
-        Iterator(GraphAdjPartition(index, it, hasType, hasWeight)))
+      adj.mapPartitions(it =>
+        Iterator(GraphAdjPartition(it)))
         .map(_.init(model, $(numBatchInit))).reduce(_ + _)
     }
 
-    val dgiGraph = adj.mapPartitionsWithIndex((index, it) =>
-      Iterator.single(DGIPartition(GraphAdjPartition(index, it, hasType, hasWeight), $(useSecondOrder))))
+    val dgiGraph = adj.mapPartitions(it =>
+      Iterator.single(DGIPartition(GraphAdjPartition(it), $(useSecondOrder))))
 
     dgiGraph.persist($(storageLevel))
     dgiGraph.foreachPartition(_ => Unit)
@@ -45,18 +45,14 @@ class DGI extends GNN[DGIPSModel, DGIModel]
   override def initialize(edgeDF: DataFrame, featureDF: DataFrame): (DGIModel, DGIPSModel, Dataset[_]) = {
     val start = System.currentTimeMillis()
 
-    val columns = edgeDF.columns
-    val hasType = columns.contains("type")
-    val hasWeight = columns.contains("weight")
-
     // read edges
-    val edges = makeEdges(edgeDF, hasType, hasWeight)
+    val edges = makeEdges(edgeDF)
 
     edges.persist(StorageLevel.DISK_ONLY)
 
     val (minId, maxId, numEdges) = edges.mapPartitions(DataLoaderUtils.summarizeApplyOp)
       .reduce(DataLoaderUtils.summarizeReduceOp)
-    val index = edges.flatMap(f => Iterator(f.src, f.dst))
+    val index = edges.flatMap(f => Iterator(f._1, f._2))
     println(s"minId=$minId maxId=$maxId numEdges=$numEdges")
 
     PSContext.getOrCreate(SparkContext.getOrCreate())
@@ -68,7 +64,7 @@ class DGI extends GNN[DGIPSModel, DGIModel]
 
     initFeatures(psModel, featureDF, minId, maxId)
 
-    val graph = makeGraph(edges, psModel, hasType, hasWeight)
+    val graph = makeGraph(edges, psModel)
 
     val end = System.currentTimeMillis()
     println(s"initialize cost ${(end - start) / 1000}s")
